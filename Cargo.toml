@@ -1,0 +1,52 @@
+[package]
+name = "rs-clob-client"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "Rust client for Polymarket's CLOB (Central Limit Order Book)"
+license = "MIT"
+repository = "https://github.com/tdergouzi/rs-clob-client"
+keywords = ["polymarket", "clob", "trading", "ethereum", "web3"]
+
+[dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# HTTP client
+reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Ethereum & Cryptography
+ethers = { version = "2.0", features = ["rustls"] }
+rs_order_utils = "0.1"
+rs-builder-signing-sdk = "0.1"
+
+# Alloy (for rs_order_utils compatibility)
+alloy-primitives = "0.8"
+alloy-signer = "0.5"
+alloy-signer-local = "0.5"
+
+# Authentication & Crypto
+hmac = "0.12"
+sha2 = "0.10"
+base64 = "0.21"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Utilities
+chrono = "0.4"
+hex = "0.4"
+
+[dev-dependencies]
+tokio-test = "0.4"
+mockito = "1.2"
+rand = "0.8"
+
+[lib]
+name = "rs_clob_client"
+path = "src/lib.rs"
