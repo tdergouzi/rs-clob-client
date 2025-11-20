@@ -1,7 +1,6 @@
 use crate::errors::ClobResult;
 use crate::signing::hmac::build_poly_hmac_signature;
 use crate::types::{ApiKeyCreds, L2PolyHeader, L2WithBuilderHeader};
-use alloy_signer::Signer;
 use alloy_signer_local::PrivateKeySigner;
 use rs_builder_signing_sdk::BuilderHeaderPayload;
 

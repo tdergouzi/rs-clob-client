@@ -5,12 +5,12 @@ pub mod endpoints;
 pub mod errors;
 pub mod types;
 pub mod utilities;
+pub mod headers;
+pub mod signing;
 
 // Internal modules
-mod headers;
 mod http;
 mod order_builder;
-mod signing;
 
 // Re-exports for convenience
 pub use client::ClobClient;

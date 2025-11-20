@@ -288,8 +288,6 @@ pub async fn create_order(
     user_order: &UserOrder,
     options: &CreateOrderOptions,
 ) -> ClobResult<SignedOrder> {
-    use alloy_signer::Signer;
-
     let signer_address = wallet.address();
     let maker = funder_address.unwrap_or(signer_address);
     let contract_config =
@@ -369,8 +367,6 @@ pub async fn create_market_order(
     user_market_order: &UserMarketOrder,
     options: &CreateOrderOptions,
 ) -> ClobResult<SignedOrder> {
-    use alloy_signer::Signer;
-
     let signer_address = wallet.address();
     let maker = funder_address.unwrap_or(signer_address);
     let contract_config =

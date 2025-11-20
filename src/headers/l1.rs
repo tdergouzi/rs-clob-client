@@ -1,7 +1,6 @@
 use crate::errors::ClobResult;
 use crate::signing::eip712::build_clob_eip712_signature;
 use crate::types::L1PolyHeader;
-use alloy_signer::Signer;
 use alloy_signer_local::PrivateKeySigner;
 
 /// Creates L1 authentication headers using EIP-712 signature for API key management

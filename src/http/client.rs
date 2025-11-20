@@ -1,5 +1,4 @@
 use crate::errors::{ClobError, ClobResult};
-use crate::types::{DropNotificationParams, OrdersScoringParams};
 use reqwest::{Client, Response};
 use serde::Serialize;
 use std::collections::HashMap;
@@ -210,30 +209,4 @@ impl HttpClient {
             })
         }
     }
-}
-
-/// Parse OrdersScoringParams to query parameters
-/// Matches TypeScript's parseOrdersScoringParams function
-pub fn parse_orders_scoring_params(params: &OrdersScoringParams) -> HashMap<String, String> {
-    let mut query_params = HashMap::new();
-
-    if !params.order_ids.is_empty() {
-        let order_ids_str = params.order_ids.join(",");
-        query_params.insert("order_ids".to_string(), order_ids_str);
-    }
-
-    query_params
-}
-
-/// Parse DropNotificationParams to query parameters
-/// Matches TypeScript's parseDropNotificationParams function
-pub fn parse_drop_notification_params(params: &DropNotificationParams) -> HashMap<String, String> {
-    let mut query_params = HashMap::new();
-
-    if !params.ids.is_empty() {
-        let ids_str = params.ids.join(",");
-        query_params.insert("ids".to_string(), ids_str);
-    }
-
-    query_params
 }
