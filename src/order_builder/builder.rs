@@ -92,7 +92,6 @@ impl OrderBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloy_signer::Signer;
 
     #[test]
     fn test_order_builder_creation() {
