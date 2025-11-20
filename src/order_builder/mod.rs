@@ -1,6 +1,3 @@
-// Order builder module
-// Will be implemented in Phase 6
-
 mod builder;
 mod helpers;
 

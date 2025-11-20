@@ -1,4 +1,3 @@
-// Headers module - authentication headers for L1/L2
 pub mod l1;
 pub mod l2;
 

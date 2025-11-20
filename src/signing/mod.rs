@@ -1,6 +1,3 @@
-// Signing module - EIP-712 and HMAC signing
-// Will be implemented in Phase 2
-
 pub mod eip712;
 pub mod hmac;
 
