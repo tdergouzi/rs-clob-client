@@ -117,8 +117,15 @@ impl ClobClient {
             )
         });
 
+        // Create HTTP client and set geo_block_token if provided
+        let http_client = if let Some(token) = &geo_block_token {
+            HttpClient::new(host.clone()).with_geo_block_token(token.clone())
+        } else {
+            HttpClient::new(host.clone())
+        };
+
         Self {
-            http_client: HttpClient::new(host.clone()),
+            http_client,
             host,
             chain_id,
             wallet,
@@ -526,6 +533,12 @@ impl ClobClient {
         Ok(response.maker_base_fee_rate_bps)
     }
 
+    /// Calculates the hash for the given orderbook
+    /// This modifies the orderbook by setting its hash field
+    pub fn get_order_book_hash(&self, orderbook: &mut OrderBookSummary) -> String {
+        crate::utilities::generate_orderbook_summary_hash(orderbook)
+    }
+
     /// Gets public market trade events
     pub async fn get_market_trades_events(
         &self,
@@ -540,24 +553,70 @@ impl ClobClient {
         self.http_client.get(&endpoint, None, None).await
     }
 
-    /// Gets current reward programs
-    pub async fn get_current_rewards(&self) -> ClobResult<serde_json::Value> {
+    /// Gets current reward programs (with automatic pagination)
+    pub async fn get_current_rewards(&self) -> ClobResult<Vec<MarketReward>> {
         let endpoint = format!("{}{}", self.host, endpoints::GET_REWARDS_MARKETS_CURRENT);
-        self.http_client.get(&endpoint, None, None).await
+
+        let mut results = Vec::new();
+        let mut next_cursor = INITIAL_CURSOR.to_string();
+
+        while next_cursor != END_CURSOR {
+            let mut params = HashMap::new();
+            params.insert("next_cursor".to_string(), next_cursor.clone());
+
+            #[derive(Deserialize)]
+            struct RewardsResponse {
+                data: Vec<MarketReward>,
+                next_cursor: String,
+            }
+
+            let response: RewardsResponse = self
+                .http_client
+                .get(&endpoint, None, Some(params))
+                .await?;
+
+            next_cursor = response.next_cursor;
+            results.extend(response.data);
+        }
+
+        Ok(results)
     }
 
-    /// Gets raw rewards for a specific market
+    /// Gets raw rewards for a specific market (with automatic pagination)
     pub async fn get_raw_rewards_for_market(
         &self,
         condition_id: &str,
-    ) -> ClobResult<serde_json::Value> {
+    ) -> ClobResult<Vec<MarketReward>> {
         let endpoint = format!(
             "{}{}{}",
             self.host,
             endpoints::GET_REWARDS_MARKETS,
             condition_id
         );
-        self.http_client.get(&endpoint, None, None).await
+
+        let mut results = Vec::new();
+        let mut next_cursor = INITIAL_CURSOR.to_string();
+
+        while next_cursor != END_CURSOR {
+            let mut params = HashMap::new();
+            params.insert("next_cursor".to_string(), next_cursor.clone());
+
+            #[derive(Deserialize)]
+            struct RewardsResponse {
+                data: Vec<MarketReward>,
+                next_cursor: String,
+            }
+
+            let response: RewardsResponse = self
+                .http_client
+                .get(&endpoint, None, Some(params))
+                .await?;
+
+            next_cursor = response.next_cursor;
+            results.extend(response.data);
+        }
+
+        Ok(results)
     }
 
     // ===================================
@@ -1295,7 +1354,7 @@ impl ClobClient {
     // Rewards (L2 Auth)
     // ===================================
 
-    /// Gets daily earnings for the user
+    /// Gets daily earnings for the user (with automatic pagination)
     pub async fn get_earnings_for_user_for_day(&self, date: &str) -> ClobResult<Vec<UserEarning>> {
         self.can_l2_auth()?;
 
@@ -1303,23 +1362,43 @@ impl ClobClient {
         let creds = self.creds.as_ref().ok_or(ClobError::L2AuthNotAvailable)?;
 
         let endpoint_path = endpoints::GET_EARNINGS_FOR_USER_FOR_DAY;
-        let timestamp = if self.use_server_time {
-            Some(self.get_server_time().await?)
-        } else {
-            None
-        };
-
-        let headers = create_l2_headers(wallet, creds, "GET", endpoint_path, None, timestamp)
-            .await?
-            .to_headers();
-
         let endpoint = format!("{}{}", self.host, endpoint_path);
-        let mut query_params = HashMap::new();
-        query_params.insert("date".to_string(), date.to_string());
 
-        self.http_client
-            .get(&endpoint, Some(headers), Some(query_params))
-            .await
+        let mut results = Vec::new();
+        let mut next_cursor = INITIAL_CURSOR.to_string();
+
+        while next_cursor != END_CURSOR {
+            let timestamp = if self.use_server_time {
+                Some(self.get_server_time().await?)
+            } else {
+                None
+            };
+
+            let headers = create_l2_headers(wallet, creds, "GET", endpoint_path, None, timestamp)
+                .await?
+                .to_headers();
+
+            let mut query_params = HashMap::new();
+            query_params.insert("date".to_string(), date.to_string());
+            query_params.insert("signature_type".to_string(), self.signature_type.to_string());
+            query_params.insert("next_cursor".to_string(), next_cursor.clone());
+
+            #[derive(Deserialize)]
+            struct EarningsResponse {
+                data: Vec<UserEarning>,
+                next_cursor: String,
+            }
+
+            let response: EarningsResponse = self
+                .http_client
+                .get(&endpoint, Some(headers), Some(query_params))
+                .await?;
+
+            next_cursor = response.next_cursor;
+            results.extend(response.data);
+        }
+
+        Ok(results)
     }
 
     /// Gets total daily earnings for the user
@@ -1352,7 +1431,7 @@ impl ClobClient {
             .await
     }
 
-    /// Gets detailed earnings and markets config for the user
+    /// Gets detailed earnings and markets config for the user (with automatic pagination)
     pub async fn get_user_earnings_and_markets_config(
         &self,
         date: &str,
@@ -1366,26 +1445,46 @@ impl ClobClient {
         let creds = self.creds.as_ref().ok_or(ClobError::L2AuthNotAvailable)?;
 
         let endpoint_path = endpoints::GET_REWARDS_EARNINGS_PERCENTAGES;
-        let timestamp = if self.use_server_time {
-            Some(self.get_server_time().await?)
-        } else {
-            None
-        };
-
-        let headers = create_l2_headers(wallet, creds, "GET", endpoint_path, None, timestamp)
-            .await?
-            .to_headers();
-
         let endpoint = format!("{}{}", self.host, endpoint_path);
-        let mut query_params = HashMap::new();
-        query_params.insert("date".to_string(), date.to_string());
-        query_params.insert("orderBy".to_string(), order_by.to_string());
-        query_params.insert("position".to_string(), position.to_string());
-        query_params.insert("noCompetition".to_string(), no_competition.to_string());
 
-        self.http_client
-            .get(&endpoint, Some(headers), Some(query_params))
-            .await
+        let mut results = Vec::new();
+        let mut next_cursor = INITIAL_CURSOR.to_string();
+
+        while next_cursor != END_CURSOR {
+            let timestamp = if self.use_server_time {
+                Some(self.get_server_time().await?)
+            } else {
+                None
+            };
+
+            let headers = create_l2_headers(wallet, creds, "GET", endpoint_path, None, timestamp)
+                .await?
+                .to_headers();
+
+            let mut query_params = HashMap::new();
+            query_params.insert("date".to_string(), date.to_string());
+            query_params.insert("signature_type".to_string(), self.signature_type.to_string());
+            query_params.insert("next_cursor".to_string(), next_cursor.clone());
+            query_params.insert("order_by".to_string(), order_by.to_string());
+            query_params.insert("position".to_string(), position.to_string());
+            query_params.insert("no_competition".to_string(), no_competition.to_string());
+
+            #[derive(Deserialize)]
+            struct UserRewardsEarningResponse {
+                data: Vec<UserRewardsEarning>,
+                next_cursor: String,
+            }
+
+            let response: UserRewardsEarningResponse = self
+                .http_client
+                .get(&endpoint, Some(headers), Some(query_params))
+                .await?;
+
+            next_cursor = response.next_cursor;
+            results.extend(response.data);
+        }
+
+        Ok(results)
     }
 
     /// Gets reward distribution percentages

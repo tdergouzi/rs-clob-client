@@ -530,6 +530,20 @@ pub struct RewardsConfig {
     pub rewards_daily_rate: f64,
 }
 
+/// Market reward
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MarketReward {
+    pub condition_id: String,
+    pub question: String,
+    pub market_slug: String,
+    pub event_slug: String,
+    pub image: String,
+    pub rewards_max_spread: f64,
+    pub rewards_min_size: f64,
+    pub tokens: Vec<Token>,
+    pub rewards_config: Vec<RewardsConfig>,
+}
+
 /// User rewards earning
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserRewardsEarning {
