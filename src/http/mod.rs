@@ -1,7 +1,5 @@
 // HTTP client module
-// Will be implemented in Phase 3
 
 mod client;
 
-pub use client::HttpClient;
-
+pub use client::{parse_drop_notification_params, parse_orders_scoring_params, HttpClient};

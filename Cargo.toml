@@ -31,6 +31,7 @@ alloy-signer-local = "0.5"
 
 # Authentication & Crypto
 hmac = "0.12"
+sha1 = "0.10"
 sha2 = "0.10"
 base64 = "0.21"
 

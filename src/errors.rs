@@ -80,4 +80,3 @@ pub enum ClobError {
 
 /// Result type alias for CLOB operations
 pub type ClobResult<T> = Result<T, ClobError>;
-

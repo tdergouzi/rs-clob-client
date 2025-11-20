@@ -1,45 +1,63 @@
 use crate::types::{OrderBookSummary, TickSize};
-use sha2::{Digest, Sha256};
+use sha1::{Digest, Sha1};
 
-/// Validates if a price is valid for the given tick size
+pub fn round_normal(num: f64, decimals: u32) -> f64 {
+    if decimal_places(num) <= decimals {
+        return num;
+    }
+    let multiplier = 10_f64.powi(decimals as i32);
+    (num * multiplier).round() / multiplier
+}
+
+pub fn round_down(num: f64, decimals: u32) -> f64 {
+    if decimal_places(num) <= decimals {
+        return num;
+    }
+    let multiplier = 10_f64.powi(decimals as i32);
+    (num * multiplier).floor() / multiplier
+}
+
+pub fn round_up(num: f64, decimals: u32) -> f64 {
+    if decimal_places(num) <= decimals {
+        return num;
+    }
+    let multiplier = 10_f64.powi(decimals as i32);
+    (num * multiplier).ceil() / multiplier
+}
+
+pub fn decimal_places(num: f64) -> u32 {
+    if num.fract() == 0.0 {
+        return 0;
+    }
+
+    let s = format!("{}", num);
+    if let Some(pos) = s.find('.') {
+        (s.len() - pos - 1) as u32
+    } else {
+        0
+    }
+}
+
+pub fn generate_orderbook_summary_hash(orderbook: &mut OrderBookSummary) -> String {
+    orderbook.hash = String::new();
+    let json = serde_json::to_string(orderbook).unwrap();
+    let mut hasher = Sha1::new();
+    hasher.update(json.as_bytes());
+    let result = hasher.finalize();
+    let hash = hex::encode(result);
+    orderbook.hash = hash.clone();
+    hash
+}
+
+pub fn is_tick_size_smaller(a: TickSize, b: TickSize) -> bool {
+    a.as_f64() < b.as_f64()
+}
+
 pub fn price_valid(price: f64, tick_size: TickSize) -> bool {
     let tick = tick_size.as_f64();
-    let min = tick;
-    let max = 1.0 - tick;
-    
-    price >= min && price <= max
+    price >= tick && price <= 1.0 - tick
 }
 
-/// Checks if one tick size is smaller than another
-pub fn is_tick_size_smaller(tick_size: TickSize, min_tick_size: TickSize) -> bool {
-    tick_size.as_f64() < min_tick_size.as_f64()
-}
-
-/// Generates a hash for the orderbook summary
-pub fn generate_orderbook_summary_hash(orderbook: &OrderBookSummary) -> String {
-    let mut hasher = Sha256::new();
-    
-    // Hash market and asset_id
-    hasher.update(orderbook.market.as_bytes());
-    hasher.update(orderbook.asset_id.as_bytes());
-    
-    // Hash bids
-    for bid in &orderbook.bids {
-        hasher.update(bid.price.as_bytes());
-        hasher.update(bid.size.as_bytes());
-    }
-    
-    // Hash asks
-    for ask in &orderbook.asks {
-        hasher.update(ask.price.as_bytes());
-        hasher.update(ask.size.as_bytes());
-    }
-    
-    let result = hasher.finalize();
-    hex::encode(result)
-}
-
-/// Parse a string tick size to TickSize enum
 pub fn parse_tick_size(tick_size: &str) -> Option<TickSize> {
     match tick_size {
         "0.1" => Some(TickSize::ZeroPointOne),
@@ -55,11 +73,41 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_round_normal() {
+        assert_eq!(round_normal(0.555, 2), 0.56);
+        assert_eq!(round_normal(0.554, 2), 0.55);
+        assert_eq!(round_normal(0.5, 2), 0.5);
+    }
+
+    #[test]
+    fn test_round_down() {
+        assert_eq!(round_down(0.559, 2), 0.55);
+        assert_eq!(round_down(0.551, 2), 0.55);
+        assert_eq!(round_down(0.5, 2), 0.5);
+    }
+
+    #[test]
+    fn test_round_up() {
+        assert_eq!(round_up(0.551, 2), 0.56);
+        assert_eq!(round_up(0.559, 2), 0.56);
+        assert_eq!(round_up(0.5, 2), 0.5);
+    }
+
+    #[test]
+    fn test_decimal_places() {
+        assert_eq!(decimal_places(0.5), 1);
+        assert_eq!(decimal_places(0.55), 2);
+        assert_eq!(decimal_places(0.555), 3);
+        assert_eq!(decimal_places(5.0), 0);
+        assert_eq!(decimal_places(0.0), 0);
+    }
+
+    #[test]
     fn test_price_valid() {
         assert!(price_valid(0.5, TickSize::ZeroPointZeroOne));
         assert!(price_valid(0.01, TickSize::ZeroPointZeroOne));
         assert!(price_valid(0.99, TickSize::ZeroPointZeroOne));
-        
+
         assert!(!price_valid(0.005, TickSize::ZeroPointZeroOne));
         assert!(!price_valid(1.0, TickSize::ZeroPointZeroOne));
         assert!(!price_valid(0.0, TickSize::ZeroPointZeroOne));
@@ -84,4 +132,3 @@ mod tests {
         assert_eq!(parse_tick_size("invalid"), None);
     }
 }
-

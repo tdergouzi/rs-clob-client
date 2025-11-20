@@ -2,6 +2,10 @@ use ethers::types::Address;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+// ============================================================================
+// Core Authentication & API Keys
+// ============================================================================
+
 /// API key credentials for L2 authentication
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApiKeyCreds {
@@ -35,6 +39,28 @@ impl From<ApiKeyRaw> for ApiKeyCreds {
 pub struct ApiKeysResponse {
     pub api_keys: Vec<ApiKeyCreds>,
 }
+
+/// Builder API key
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BuilderApiKey {
+    pub key: String,
+    pub secret: String,
+    pub passphrase: String,
+}
+
+/// Builder API key response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BuilderApiKeyResponse {
+    pub key: String,
+    #[serde(rename = "createdAt")]
+    pub created_at: Option<String>,
+    #[serde(rename = "revokedAt")]
+    pub revoked_at: Option<String>,
+}
+
+// ============================================================================
+// Fundamental Enums
+// ============================================================================
 
 /// Blockchain network
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -85,34 +111,102 @@ pub enum OrderType {
     Fak,
 }
 
+/// Asset type
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum AssetType {
+    Collateral,
+    Conditional,
+}
+
+/// Trader side in a trade
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum TraderSide {
+    Taker,
+    Maker,
+}
+
+/// Tick size type
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TickSize {
+    #[serde(rename = "0.1")]
+    ZeroPointOne,
+    #[serde(rename = "0.01")]
+    ZeroPointZeroOne,
+    #[serde(rename = "0.001")]
+    ZeroPointZeroZeroOne,
+    #[serde(rename = "0.0001")]
+    ZeroPointZeroZeroZeroOne,
+}
+
+impl TickSize {
+    pub fn as_f64(&self) -> f64 {
+        match self {
+            TickSize::ZeroPointOne => 0.1,
+            TickSize::ZeroPointZeroOne => 0.01,
+            TickSize::ZeroPointZeroZeroOne => 0.001,
+            TickSize::ZeroPointZeroZeroZeroOne => 0.0001,
+        }
+    }
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            TickSize::ZeroPointOne => "0.1",
+            TickSize::ZeroPointZeroOne => "0.01",
+            TickSize::ZeroPointZeroZeroOne => "0.001",
+            TickSize::ZeroPointZeroZeroZeroOne => "0.0001",
+        }
+    }
+}
+
+/// Price history interval
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PriceHistoryInterval {
+    Max,
+    #[serde(rename = "1w")]
+    OneWeek,
+    #[serde(rename = "1d")]
+    OneDay,
+    #[serde(rename = "6h")]
+    SixHours,
+    #[serde(rename = "1h")]
+    OneHour,
+}
+
+// ============================================================================
+// Order Types & Parameters
+// ============================================================================
+
 /// Simplified user order for creating limit orders
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserOrder {
     /// Token ID of the conditional token asset being traded
     #[serde(rename = "tokenID")]
     pub token_id: String,
-    
+
     /// Price used to create the order
     pub price: f64,
-    
+
     /// Size in terms of the ConditionalToken
     pub size: f64,
-    
+
     /// Side of the order
     pub side: Side,
-    
+
     /// Fee rate, in basis points, charged to the order maker
     #[serde(rename = "feeRateBps", skip_serializing_if = "Option::is_none")]
     pub fee_rate_bps: Option<u32>,
-    
+
     /// Nonce used for onchain cancellations
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nonce: Option<u64>,
-    
+
     /// Timestamp after which the order is expired
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expiration: Option<u64>,
-    
+
     /// Address of the order taker (zero address = public order)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub taker: Option<Address>,
@@ -124,30 +218,30 @@ pub struct UserMarketOrder {
     /// Token ID of the conditional token asset being traded
     #[serde(rename = "tokenID")]
     pub token_id: String,
-    
+
     /// Price (if not present, market price will be calculated)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub price: Option<f64>,
-    
+
     /// BUY orders: $$$ Amount to buy
     /// SELL orders: Shares to sell
     pub amount: f64,
-    
+
     /// Side of the order
     pub side: Side,
-    
+
     /// Fee rate, in basis points
     #[serde(rename = "feeRateBps", skip_serializing_if = "Option::is_none")]
     pub fee_rate_bps: Option<u32>,
-    
+
     /// Nonce used for onchain cancellations
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nonce: Option<u64>,
-    
+
     /// Address of the order taker
     #[serde(skip_serializing_if = "Option::is_none")]
     pub taker: Option<Address>,
-    
+
     /// Order type (FOK or FAK)
     #[serde(rename = "orderType", skip_serializing_if = "Option::is_none")]
     pub order_type: Option<OrderType>,
@@ -169,10 +263,11 @@ pub struct OrderMarketCancelParams {
     pub asset_id: Option<String>,
 }
 
-/// Ban status response
+/// Arguments for posting multiple orders
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BanStatus {
-    pub closed_only: bool,
+pub struct PostOrdersArgs {
+    pub order: serde_json::Value,
+    pub order_type: OrderType,
 }
 
 /// Open order information
@@ -198,23 +293,6 @@ pub struct OpenOrder {
 /// Open orders response
 pub type OpenOrdersResponse = Vec<OpenOrder>;
 
-/// Trade parameters for filtering
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct TradeParams {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub maker_address: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub market: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub asset_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub before: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub after: Option<String>,
-}
-
 /// Open order parameters for filtering
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct OpenOrderParams {
@@ -225,6 +303,25 @@ pub struct OpenOrderParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub asset_id: Option<String>,
 }
+
+/// Create order options
+#[derive(Debug, Clone)]
+pub struct CreateOrderOptions {
+    pub tick_size: TickSize,
+    pub neg_risk: Option<bool>,
+}
+
+/// Round configuration for price calculations
+#[derive(Debug, Clone)]
+pub struct RoundConfig {
+    pub price: u32,
+    pub size: u32,
+    pub amount: u32,
+}
+
+// ============================================================================
+// Trading & Market Data
+// ============================================================================
 
 /// Maker order information
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -263,12 +360,28 @@ pub struct Trade {
     pub trader_side: TraderSide,
 }
 
-/// Trader side in a trade
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "UPPERCASE")]
-pub enum TraderSide {
-    Taker,
-    Maker,
+/// Trade parameters for filtering
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct TradeParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maker_address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub market: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub asset_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub before: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub after: Option<String>,
+}
+
+/// Paginated trades response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TradesPaginatedResponse {
+    pub data: Vec<Trade>,
+    pub next_cursor: String,
 }
 
 /// Order summary in orderbook
@@ -308,21 +421,6 @@ pub struct MarketPrice {
     pub p: f64,
 }
 
-/// Price history interval
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum PriceHistoryInterval {
-    Max,
-    #[serde(rename = "1w")]
-    OneWeek,
-    #[serde(rename = "1d")]
-    OneDay,
-    #[serde(rename = "6h")]
-    SixHours,
-    #[serde(rename = "1h")]
-    OneHour,
-}
-
 /// Price history filter parameters
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PriceHistoryFilterParams {
@@ -338,28 +436,9 @@ pub struct PriceHistoryFilterParams {
     pub interval: Option<PriceHistoryInterval>,
 }
 
-/// Notification
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Notification {
-    #[serde(rename = "type")]
-    pub notification_type: u32,
-    pub owner: String,
-    pub payload: serde_json::Value,
-}
-
-/// Drop notification parameters
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DropNotificationParams {
-    pub ids: Vec<String>,
-}
-
-/// Asset type
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "UPPERCASE")]
-pub enum AssetType {
-    Collateral,
-    Conditional,
-}
+// ============================================================================
+// Balance & Allowance
+// ============================================================================
 
 /// Balance allowance parameters
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -375,6 +454,16 @@ pub struct BalanceAllowanceResponse {
     pub balance: String,
     pub allowance: String,
 }
+
+/// Ban status response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BanStatus {
+    pub closed_only: bool,
+}
+
+// ============================================================================
+// Order Scoring
+// ============================================================================
 
 /// Order scoring parameters
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -397,62 +486,87 @@ pub struct OrdersScoringParams {
 /// Orders scoring response
 pub type OrdersScoring = HashMap<String, bool>;
 
-/// Tick size type
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum TickSize {
-    #[serde(rename = "0.1")]
-    ZeroPointOne,
-    #[serde(rename = "0.01")]
-    ZeroPointZeroOne,
-    #[serde(rename = "0.001")]
-    ZeroPointZeroZeroOne,
-    #[serde(rename = "0.0001")]
-    ZeroPointZeroZeroZeroOne,
+// ============================================================================
+// Rewards & Earnings
+// ============================================================================
+
+/// User earning
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserEarning {
+    pub date: String,
+    pub condition_id: String,
+    pub asset_address: String,
+    pub maker_address: String,
+    pub earnings: f64,
+    pub asset_rate: f64,
 }
 
-impl TickSize {
-    pub fn as_f64(&self) -> f64 {
-        match self {
-            TickSize::ZeroPointOne => 0.1,
-            TickSize::ZeroPointZeroOne => 0.01,
-            TickSize::ZeroPointZeroZeroOne => 0.001,
-            TickSize::ZeroPointZeroZeroZeroOne => 0.0001,
-        }
-    }
-
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            TickSize::ZeroPointOne => "0.1",
-            TickSize::ZeroPointZeroOne => "0.01",
-            TickSize::ZeroPointZeroZeroOne => "0.001",
-            TickSize::ZeroPointZeroZeroZeroOne => "0.0001",
-        }
-    }
+/// Total user earning
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TotalUserEarning {
+    pub date: String,
+    pub asset_address: String,
+    pub maker_address: String,
+    pub earnings: f64,
+    pub asset_rate: f64,
 }
 
-/// Create order options
-#[derive(Debug, Clone)]
-pub struct CreateOrderOptions {
-    pub tick_size: TickSize,
-    pub neg_risk: Option<bool>,
+/// Rewards percentages
+pub type RewardsPercentages = HashMap<String, f64>;
+
+/// Token info for rewards
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Token {
+    pub token_id: String,
+    pub outcome: String,
+    pub price: f64,
 }
 
-/// Round configuration for price calculations
-#[derive(Debug, Clone)]
-pub struct RoundConfig {
-    pub price: u32,
-    pub size: u32,
-    pub amount: u32,
+/// Rewards config
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RewardsConfig {
+    pub date: String,
+    pub asset_address: String,
+    pub rewards_daily_rate: f64,
 }
 
-/// Tick sizes cache
-pub type TickSizes = HashMap<String, TickSize>;
+/// User rewards earning
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserRewardsEarning {
+    pub condition_id: String,
+    pub question: String,
+    pub market_slug: String,
+    pub event_slug: String,
+    pub image: String,
+    pub rewards_max_spread: f64,
+    pub rewards_min_size: f64,
+    pub market_competitiveness: f64,
+    pub tokens: Vec<Token>,
+    pub rewards_config: Vec<RewardsConfig>,
+}
 
-/// Negative risk flags cache
-pub type NegRisk = HashMap<String, bool>;
+// ============================================================================
+// Notifications
+// ============================================================================
 
-/// Fee rates cache
-pub type FeeRates = HashMap<String, u32>;
+/// Notification
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Notification {
+    #[serde(rename = "type")]
+    pub notification_type: u32,
+    pub owner: String,
+    pub payload: serde_json::Value,
+}
+
+/// Drop notification parameters
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DropNotificationParams {
+    pub ids: Vec<String>,
+}
+
+// ============================================================================
+// Pagination & Events
+// ============================================================================
 
 /// Pagination payload
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -497,23 +611,9 @@ pub struct UserInfo {
     pub pseudonym: String,
 }
 
-/// Builder API key
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BuilderApiKey {
-    pub key: String,
-    pub secret: String,
-    pub passphrase: String,
-}
-
-/// Builder API key response
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BuilderApiKeyResponse {
-    pub key: String,
-    #[serde(rename = "createdAt")]
-    pub created_at: Option<String>,
-    #[serde(rename = "revokedAt")]
-    pub revoked_at: Option<String>,
-}
+// ============================================================================
+// Builder Types
+// ============================================================================
 
 /// Builder trade
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -554,75 +654,6 @@ pub struct BuilderTrade {
     pub updated_at: Option<String>,
 }
 
-/// Arguments for posting multiple orders
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PostOrdersArgs {
-    pub order: serde_json::Value,
-    pub order_type: OrderType,
-}
-
-/// Paginated trades response
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TradesPaginatedResponse {
-    pub data: Vec<Trade>,
-    pub next_cursor: String,
-}
-
-/// User earning
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UserEarning {
-    pub date: String,
-    pub condition_id: String,
-    pub asset_address: String,
-    pub maker_address: String,
-    pub earnings: f64,
-    pub asset_rate: f64,
-}
-
-/// Total user earning
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TotalUserEarning {
-    pub date: String,
-    pub asset_address: String,
-    pub maker_address: String,
-    pub earnings: f64,
-    pub asset_rate: f64,
-}
-
-/// Rewards percentages
-pub type RewardsPercentages = std::collections::HashMap<String, f64>;
-
-/// Token info for rewards
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Token {
-    pub token_id: String,
-    pub outcome: String,
-    pub price: f64,
-}
-
-/// Rewards config
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RewardsConfig {
-    pub date: String,
-    pub asset_address: String,
-    pub rewards_daily_rate: f64,
-}
-
-/// User rewards earning
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UserRewardsEarning {
-    pub condition_id: String,
-    pub question: String,
-    pub market_slug: String,
-    pub event_slug: String,
-    pub image: String,
-    pub rewards_max_spread: f64,
-    pub rewards_min_size: f64,
-    pub market_competitiveness: f64,
-    pub tokens: Vec<Token>,
-    pub rewards_config: Vec<RewardsConfig>,
-}
-
 /// Builder trades response
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BuilderTradesResponse {
@@ -630,3 +661,109 @@ pub struct BuilderTradesResponse {
     pub next_cursor: String,
 }
 
+// ============================================================================
+// Authentication Headers
+// ============================================================================
+
+/// L1 authentication headers (EIP-712 signature based)
+/// Used for API key management operations
+#[derive(Debug, Clone)]
+pub struct L1PolyHeader {
+    pub poly_address: String,
+    pub poly_signature: String,
+    pub poly_timestamp: String,
+    pub poly_nonce: String,
+}
+
+impl L1PolyHeader {
+    /// Converts the struct to a HashMap for HTTP client usage
+    pub fn to_headers(&self) -> HashMap<String, String> {
+        let mut headers = HashMap::new();
+        headers.insert("POLY_ADDRESS".to_string(), self.poly_address.clone());
+        headers.insert("POLY_SIGNATURE".to_string(), self.poly_signature.clone());
+        headers.insert("POLY_TIMESTAMP".to_string(), self.poly_timestamp.clone());
+        headers.insert("POLY_NONCE".to_string(), self.poly_nonce.clone());
+        headers
+    }
+}
+
+/// L2 authentication headers (HMAC signature based)
+/// Used for trading operations with API credentials
+#[derive(Debug, Clone)]
+pub struct L2PolyHeader {
+    pub poly_address: String,
+    pub poly_signature: String,
+    pub poly_timestamp: String,
+    pub poly_api_key: String,
+    pub poly_passphrase: String,
+}
+
+impl L2PolyHeader {
+    /// Converts the struct to a HashMap for HTTP client usage
+    pub fn to_headers(&self) -> HashMap<String, String> {
+        let mut headers = HashMap::new();
+        headers.insert("POLY_ADDRESS".to_string(), self.poly_address.clone());
+        headers.insert("POLY_SIGNATURE".to_string(), self.poly_signature.clone());
+        headers.insert("POLY_TIMESTAMP".to_string(), self.poly_timestamp.clone());
+        headers.insert("POLY_API_KEY".to_string(), self.poly_api_key.clone());
+        headers.insert("POLY_PASSPHRASE".to_string(), self.poly_passphrase.clone());
+        headers
+    }
+}
+
+/// L2 headers with builder authentication
+/// Combines L2 headers with builder-specific headers
+#[derive(Debug, Clone)]
+pub struct L2WithBuilderHeader {
+    pub poly_address: String,
+    pub poly_signature: String,
+    pub poly_timestamp: String,
+    pub poly_api_key: String,
+    pub poly_passphrase: String,
+    pub poly_builder_api_key: String,
+    pub poly_builder_timestamp: String,
+    pub poly_builder_passphrase: String,
+    pub poly_builder_signature: String,
+}
+
+impl L2WithBuilderHeader {
+    /// Converts the struct to a HashMap for HTTP client usage
+    pub fn to_headers(&self) -> HashMap<String, String> {
+        let mut headers = HashMap::new();
+        headers.insert("POLY_ADDRESS".to_string(), self.poly_address.clone());
+        headers.insert("POLY_SIGNATURE".to_string(), self.poly_signature.clone());
+        headers.insert("POLY_TIMESTAMP".to_string(), self.poly_timestamp.clone());
+        headers.insert("POLY_API_KEY".to_string(), self.poly_api_key.clone());
+        headers.insert("POLY_PASSPHRASE".to_string(), self.poly_passphrase.clone());
+        headers.insert(
+            "POLY_BUILDER_API_KEY".to_string(),
+            self.poly_builder_api_key.clone(),
+        );
+        headers.insert(
+            "POLY_BUILDER_TIMESTAMP".to_string(),
+            self.poly_builder_timestamp.clone(),
+        );
+        headers.insert(
+            "POLY_BUILDER_PASSPHRASE".to_string(),
+            self.poly_builder_passphrase.clone(),
+        );
+        headers.insert(
+            "POLY_BUILDER_SIGNATURE".to_string(),
+            self.poly_builder_signature.clone(),
+        );
+        headers
+    }
+}
+
+// ============================================================================
+// Cache Types
+// ============================================================================
+
+/// Tick sizes cache
+pub type TickSizes = HashMap<String, TickSize>;
+
+/// Negative risk flags cache
+pub type NegRisk = HashMap<String, bool>;
+
+/// Fee rates cache
+pub type FeeRates = HashMap<String, u32>;

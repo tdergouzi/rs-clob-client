@@ -73,4 +73,3 @@ pub mod endpoints {
     // Builder endpoints
     pub const GET_BUILDER_TRADES: &str = "/builder/trades";
 }
-

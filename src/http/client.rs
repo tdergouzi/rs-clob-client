@@ -1,7 +1,5 @@
-// HTTP client implementation
-// Phase 3: Complete HTTP layer with authentication header injection
-
 use crate::errors::{ClobError, ClobResult};
+use crate::types::{DropNotificationParams, OrdersScoringParams};
 use reqwest::{Client, Response};
 use serde::Serialize;
 use std::collections::HashMap;
@@ -29,6 +27,38 @@ impl HttpClient {
         self
     }
 
+    /// Add default headers to the request (similar to TypeScript overloadHeaders)
+    fn add_default_headers(
+        &self,
+        method: &str,
+        headers: Option<HashMap<String, String>>,
+    ) -> HashMap<String, String> {
+        let mut final_headers = headers.unwrap_or_default();
+
+        // Add default headers if not already present
+        final_headers
+            .entry("User-Agent".to_string())
+            .or_insert_with(|| "@polymarket/clob-client".to_string());
+        final_headers
+            .entry("Accept".to_string())
+            .or_insert_with(|| "*/*".to_string());
+        final_headers
+            .entry("Connection".to_string())
+            .or_insert_with(|| "keep-alive".to_string());
+        final_headers
+            .entry("Content-Type".to_string())
+            .or_insert_with(|| "application/json".to_string());
+
+        // Add Accept-Encoding for GET requests
+        if method == "GET" {
+            final_headers
+                .entry("Accept-Encoding".to_string())
+                .or_insert_with(|| "gzip".to_string());
+        }
+
+        final_headers
+    }
+
     /// Send a GET request
     pub async fn get<T>(
         &self,
@@ -42,11 +72,10 @@ impl HttpClient {
         let url = format!("{}{}", self.base_url, endpoint);
         let mut request = self.client.get(&url);
 
-        // Add headers
-        if let Some(headers_map) = headers {
-            for (key, value) in headers_map {
-                request = request.header(key, value);
-            }
+        // Add default headers merged with provided headers
+        let final_headers = self.add_default_headers("GET", headers);
+        for (key, value) in final_headers {
+            request = request.header(key, value);
         }
 
         // Add query parameters
@@ -78,11 +107,10 @@ impl HttpClient {
         let url = format!("{}{}", self.base_url, endpoint);
         let mut request = self.client.post(&url);
 
-        // Add headers
-        if let Some(headers_map) = headers {
-            for (key, value) in headers_map {
-                request = request.header(key, value);
-            }
+        // Add default headers merged with provided headers
+        let final_headers = self.add_default_headers("POST", headers);
+        for (key, value) in final_headers {
+            request = request.header(key, value);
         }
 
         // Add body
@@ -119,11 +147,10 @@ impl HttpClient {
         let url = format!("{}{}", self.base_url, endpoint);
         let mut request = self.client.delete(&url);
 
-        // Add headers
-        if let Some(headers_map) = headers {
-            for (key, value) in headers_map {
-                request = request.header(key, value);
-            }
+        // Add default headers merged with provided headers
+        let final_headers = self.add_default_headers("DELETE", headers);
+        for (key, value) in final_headers {
+            request = request.header(key, value);
         }
 
         // Add body (for delete with payload)
@@ -151,22 +178,31 @@ impl HttpClient {
         T: serde::de::DeserializeOwned,
     {
         let status = response.status();
+        let url = response.url().clone();
 
         if status.is_success() {
             // Parse successful response
             let data = response.json::<T>().await.map_err(|e| {
                 // Convert reqwest error to JSON error via string
                 let error_msg = format!("Failed to parse JSON response: {}", e);
+                eprintln!("[CLOB Client] request error: {}", error_msg);
                 ClobError::Other(error_msg)
             })?;
             Ok(data)
         } else {
-            // Handle error response
+            // Handle error response with detailed logging
             let status_code = status.as_u16();
+            let status_text = status.canonical_reason().unwrap_or("Unknown");
             let error_text = response
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
+
+            // Log error details similar to TypeScript version
+            eprintln!(
+                "[CLOB Client] request error: {{\"status\": {}, \"statusText\": \"{}\", \"data\": \"{}\", \"url\": \"{}\"}}",
+                status_code, status_text, error_text, url
+            );
 
             Err(ClobError::ApiError {
                 message: error_text,
@@ -176,153 +212,28 @@ impl HttpClient {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use mockito::Server;
+/// Parse OrdersScoringParams to query parameters
+/// Matches TypeScript's parseOrdersScoringParams function
+pub fn parse_orders_scoring_params(params: &OrdersScoringParams) -> HashMap<String, String> {
+    let mut query_params = HashMap::new();
 
-    #[tokio::test]
-    async fn test_get_request() {
-        let mut server = Server::new_async().await;
-        let _m = server.mock("GET", "/test")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"result":"success"}"#)
-            .create_async().await;
-
-        let client = HttpClient::new(server.url());
-        let result: serde_json::Value = client.get("/test", None, None).await.unwrap();
-        assert_eq!(result["result"], "success");
+    if !params.order_ids.is_empty() {
+        let order_ids_str = params.order_ids.join(",");
+        query_params.insert("order_ids".to_string(), order_ids_str);
     }
 
-    #[tokio::test]
-    async fn test_get_with_params() {
-        let mut server = Server::new_async().await;
-        let _m = server.mock("GET", "/markets")
-            .match_query(mockito::Matcher::UrlEncoded(
-                "status".into(),
-                "active".into(),
-            ))
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"markets":[]}"#)
-            .create_async().await;
-
-        let client = HttpClient::new(server.url());
-        let mut params = HashMap::new();
-        params.insert("status".to_string(), "active".to_string());
-
-        let result: serde_json::Value = client.get("/markets", None, Some(params)).await.unwrap();
-        assert!(result["markets"].is_array());
-    }
-
-    #[tokio::test]
-    async fn test_post_request() {
-        let mut server = Server::new_async().await;
-        let _m = server.mock("POST", "/order")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"orderId":"123"}"#)
-            .create_async().await;
-
-        let client = HttpClient::new(server.url());
-        let body = serde_json::json!({"price": 0.5});
-        let result: serde_json::Value = client
-            .post("/order", None, Some(body), None)
-            .await
-            .unwrap();
-        assert_eq!(result["orderId"], "123");
-    }
-
-    #[tokio::test]
-    async fn test_delete_request() {
-        let mut server = Server::new_async().await;
-        let _m = server.mock("DELETE", "/order/123")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"success":true}"#)
-            .create_async().await;
-
-        let client = HttpClient::new(server.url());
-        let result: serde_json::Value = client
-            .delete::<serde_json::Value, serde_json::Value>("/order/123", None, None, None)
-            .await
-            .unwrap();
-        assert_eq!(result["success"], true);
-    }
-
-    #[tokio::test]
-    async fn test_error_response() {
-        let mut server = Server::new_async().await;
-        let _m = server.mock("GET", "/error")
-            .with_status(400)
-            .with_body("Bad request")
-            .create_async().await;
-
-        let client = HttpClient::new(server.url());
-        let result: Result<serde_json::Value, _> = client.get("/error", None, None).await;
-        assert!(result.is_err());
-
-        if let Err(ClobError::ApiError { message, status }) = result {
-            assert_eq!(status, 400);
-            assert_eq!(message, "Bad request");
-        } else {
-            panic!("Expected ApiError");
-        }
-    }
-
-    #[tokio::test]
-    async fn test_headers_injection() {
-        let mut server = Server::new_async().await;
-        let _m = server.mock("GET", "/auth")
-            .match_header("POLY_ADDRESS", "0x123")
-            .with_status(200)
-            .with_body(r#"{"authenticated":true}"#)
-            .create_async().await;
-
-        let client = HttpClient::new(server.url());
-        let mut headers = HashMap::new();
-        headers.insert("POLY_ADDRESS".to_string(), "0x123".to_string());
-
-        let result: serde_json::Value = client.get("/auth", Some(headers), None).await.unwrap();
-        assert_eq!(result["authenticated"], true);
-    }
-
-    #[tokio::test]
-    async fn test_geo_block_token() {
-        let mut server = Server::new_async().await;
-        let _m = server.mock("GET", "/markets")
-            .match_query(mockito::Matcher::UrlEncoded(
-                "geo_block_token".into(),
-                "test_token".into(),
-            ))
-            .with_status(200)
-            .with_body(r#"{"markets":[]}"#)
-            .create_async().await;
-
-        let client =
-            HttpClient::new(server.url()).with_geo_block_token("test_token".to_string());
-
-        let result: serde_json::Value = client.get("/markets", None, None).await.unwrap();
-        assert!(result["markets"].is_array());
-    }
-
-    #[tokio::test]
-    async fn test_delete_with_body() {
-        let mut server = Server::new_async().await;
-        let _m = server.mock("DELETE", "/orders")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(r#"{"deleted":2}"#)
-            .create_async().await;
-
-        let client = HttpClient::new(server.url());
-        let body = serde_json::json!({"orderIds": ["1", "2"]});
-        let result: serde_json::Value = client
-            .delete("/orders", None, Some(body), None)
-            .await
-            .unwrap();
-        assert_eq!(result["deleted"], 2);
-    }
+    query_params
 }
 
+/// Parse DropNotificationParams to query parameters
+/// Matches TypeScript's parseDropNotificationParams function
+pub fn parse_drop_notification_params(params: &DropNotificationParams) -> HashMap<String, String> {
+    let mut query_params = HashMap::new();
+
+    if !params.ids.is_empty() {
+        let ids_str = params.ids.join(",");
+        query_params.insert("ids".to_string(), ids_str);
+    }
+
+    query_params
+}

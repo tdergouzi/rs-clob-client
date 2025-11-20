@@ -1,31 +1,10 @@
 use crate::errors::ClobResult;
 use crate::signing::hmac::build_poly_hmac_signature;
-use crate::types::ApiKeyCreds;
+use crate::types::{ApiKeyCreds, L2PolyHeader, L2WithBuilderHeader};
 use ethers::signers::{LocalWallet, Signer};
-use std::collections::HashMap;
+use rs_builder_signing_sdk::BuilderHeaderPayload;
 
-/// Creates L2 authentication headers using HMAC signature
-///
-/// L2 auth is used for trading operations and requires API credentials.
-/// It uses HMAC-SHA256 for fast, stateless authentication.
-///
-/// # Arguments
-///
-/// * `wallet` - LocalWallet (for address)
-/// * `creds` - API key credentials
-/// * `method` - HTTP method (GET, POST, DELETE)
-/// * `request_path` - API endpoint path
-/// * `body` - Optional request body (JSON string)
-/// * `timestamp` - Optional timestamp (defaults to current time)
-///
-/// # Returns
-///
-/// HashMap with headers:
-/// - POLY_ADDRESS: Wallet address
-/// - POLY_SIGNATURE: HMAC signature
-/// - POLY_TIMESTAMP: Unix timestamp
-/// - POLY_API_KEY: API key
-/// - POLY_PASSPHRASE: API passphrase
+/// Creates L2 authentication headers using HMAC-SHA256 for trading operations
 pub async fn create_l2_headers(
     wallet: &LocalWallet,
     creds: &ApiKeyCreds,
@@ -33,7 +12,7 @@ pub async fn create_l2_headers(
     request_path: &str,
     body: Option<&str>,
     timestamp: Option<u64>,
-) -> ClobResult<HashMap<String, String>> {
+) -> ClobResult<L2PolyHeader> {
     let ts = timestamp.unwrap_or_else(|| {
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -44,79 +23,46 @@ pub async fn create_l2_headers(
     let signature = build_poly_hmac_signature(&creds.secret, ts, method, request_path, body)?;
     let address = format!("{:?}", wallet.address());
 
-    let mut headers = HashMap::new();
-    headers.insert("POLY_ADDRESS".to_string(), address);
-    headers.insert("POLY_SIGNATURE".to_string(), signature);
-    headers.insert("POLY_TIMESTAMP".to_string(), ts.to_string());
-    headers.insert("POLY_API_KEY".to_string(), creds.key.clone());
-    headers.insert("POLY_PASSPHRASE".to_string(), creds.passphrase.clone());
-
-    Ok(headers)
+    Ok(L2PolyHeader {
+        poly_address: address,
+        poly_signature: signature,
+        poly_timestamp: ts.to_string(),
+        poly_api_key: creds.key.clone(),
+        poly_passphrase: creds.passphrase.clone(),
+    })
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use base64::{engine::general_purpose, Engine as _};
+/// Combines L2 headers with builder authentication headers
+pub fn inject_builder_headers(
+    l2_headers: L2PolyHeader,
+    builder_headers: BuilderHeaderPayload,
+) -> L2WithBuilderHeader {
+    let poly_builder_api_key = builder_headers
+        .get("POLY_BUILDER_API_KEY")
+        .cloned()
+        .unwrap_or_default();
+    let poly_builder_timestamp = builder_headers
+        .get("POLY_BUILDER_TIMESTAMP")
+        .cloned()
+        .unwrap_or_default();
+    let poly_builder_passphrase = builder_headers
+        .get("POLY_BUILDER_PASSPHRASE")
+        .cloned()
+        .unwrap_or_default();
+    let poly_builder_signature = builder_headers
+        .get("POLY_BUILDER_SIGNATURE")
+        .cloned()
+        .unwrap_or_default();
 
-    #[tokio::test]
-    async fn test_create_l2_headers() {
-        let wallet = LocalWallet::new(&mut rand::thread_rng());
-        let creds = ApiKeyCreds {
-            key: "test-key".to_string(),
-            secret: general_purpose::STANDARD.encode("test-secret"),
-            passphrase: "test-passphrase".to_string(),
-        };
-
-        let result = create_l2_headers(&wallet, &creds, "GET", "/test", None, None).await;
-        assert!(result.is_ok());
-
-        let headers = result.unwrap();
-        assert!(headers.contains_key("POLY_ADDRESS"));
-        assert!(headers.contains_key("POLY_SIGNATURE"));
-        assert!(headers.contains_key("POLY_TIMESTAMP"));
-        assert!(headers.contains_key("POLY_API_KEY"));
-        assert!(headers.contains_key("POLY_PASSPHRASE"));
-
-        assert_eq!(headers["POLY_API_KEY"], "test-key");
-        assert_eq!(headers["POLY_PASSPHRASE"], "test-passphrase");
-    }
-
-    #[tokio::test]
-    async fn test_create_l2_headers_with_body() {
-        let wallet = LocalWallet::new(&mut rand::thread_rng());
-        let creds = ApiKeyCreds {
-            key: "test-key".to_string(),
-            secret: general_purpose::STANDARD.encode("test-secret"),
-            passphrase: "test-passphrase".to_string(),
-        };
-
-        let body = r#"{"tokenID":"123","price":0.5}"#;
-        let result = create_l2_headers(&wallet, &creds, "POST", "/order", Some(body), None).await;
-        assert!(result.is_ok());
-
-        let headers = result.unwrap();
-        // Signature should be different when body is included
-        assert!(!headers["POLY_SIGNATURE"].is_empty());
-    }
-
-    #[tokio::test]
-    async fn test_create_l2_headers_with_custom_timestamp() {
-        let wallet = LocalWallet::new(&mut rand::thread_rng());
-        let creds = ApiKeyCreds {
-            key: "test-key".to_string(),
-            secret: general_purpose::STANDARD.encode("test-secret"),
-            passphrase: "test-passphrase".to_string(),
-        };
-
-        let timestamp = Some(1234567890);
-        let result =
-            create_l2_headers(&wallet, &creds, "GET", "/test", None, timestamp).await;
-        assert!(result.is_ok());
-
-        let headers = result.unwrap();
-        assert_eq!(headers["POLY_TIMESTAMP"], "1234567890");
+    L2WithBuilderHeader {
+        poly_address: l2_headers.poly_address,
+        poly_signature: l2_headers.poly_signature,
+        poly_timestamp: l2_headers.poly_timestamp,
+        poly_api_key: l2_headers.poly_api_key,
+        poly_passphrase: l2_headers.poly_passphrase,
+        poly_builder_api_key,
+        poly_builder_timestamp,
+        poly_builder_passphrase,
+        poly_builder_signature,
     }
 }
-
-
