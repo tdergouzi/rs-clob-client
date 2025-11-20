@@ -49,6 +49,7 @@ hex = "0.4"
 tokio-test = "0.4"
 mockito = "1.2"
 rand = "0.8"
+dotenvy = "0.15"
 
 [lib]
 name = "rs_clob_client"
