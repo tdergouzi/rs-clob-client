@@ -1,6 +1,7 @@
 use crate::errors::ClobResult;
 use crate::types::{Chain, CreateOrderOptions, UserMarketOrder, UserOrder};
-use ethers::signers::LocalWallet;
+use alloy_primitives::Address;
+use alloy_signer_local::PrivateKeySigner;
 use rs_order_utils::{SignatureType, SignedOrder};
 use std::future::Future;
 use std::pin::Pin;
@@ -10,16 +11,16 @@ use super::helpers::{create_market_order, create_order};
 
 /// Type alias for dynamic signer resolver function
 type GetSignerFn = Arc<
-    dyn Fn() -> Pin<Box<dyn Future<Output = ClobResult<LocalWallet>> + Send>> + Send + Sync,
+    dyn Fn() -> Pin<Box<dyn Future<Output = ClobResult<PrivateKeySigner>> + Send>> + Send + Sync,
 >;
 
 /// OrderBuilder creates and signs orders for the Polymarket CLOB
 pub struct OrderBuilder {
-    wallet: LocalWallet,
+    wallet: PrivateKeySigner,
     chain_id: Chain,
     signature_type: SignatureType,
     /// Optional funder address for smart contract wallets
-    funder_address: Option<ethers::types::Address>,
+    funder_address: Option<Address>,
     /// Optional function to dynamically resolve the signer
     get_signer: Option<GetSignerFn>,
 }
@@ -27,10 +28,10 @@ pub struct OrderBuilder {
 impl OrderBuilder {
     /// Creates a new OrderBuilder
     pub fn new(
-        wallet: LocalWallet,
+        wallet: PrivateKeySigner,
         chain_id: Chain,
         signature_type: Option<SignatureType>,
-        funder_address: Option<ethers::types::Address>,
+        funder_address: Option<Address>,
         get_signer: Option<GetSignerFn>,
     ) -> Self {
         Self {
@@ -79,7 +80,7 @@ impl OrderBuilder {
     }
 
     /// Resolves the signer: uses get_signer if provided, otherwise returns the static wallet
-    async fn resolve_signer(&self) -> ClobResult<LocalWallet> {
+    async fn resolve_signer(&self) -> ClobResult<PrivateKeySigner> {
         if let Some(ref get_signer_fn) = self.get_signer {
             get_signer_fn().await
         } else {
@@ -91,12 +92,11 @@ impl OrderBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ethers::core::rand::thread_rng;
-    use ethers::signers::Signer;
+    use alloy_signer::Signer;
 
     #[test]
     fn test_order_builder_creation() {
-        let wallet = LocalWallet::new(&mut thread_rng());
+        let wallet = PrivateKeySigner::random();
         let builder = OrderBuilder::new(wallet, Chain::Amoy, None, None, None);
 
         assert_eq!(builder.chain_id, Chain::Amoy);
@@ -107,7 +107,7 @@ mod tests {
 
     #[test]
     fn test_order_builder_with_options() {
-        let wallet = LocalWallet::new(&mut thread_rng());
+        let wallet = PrivateKeySigner::random();
         let funder = wallet.address();
 
         let builder = OrderBuilder::new(
@@ -125,7 +125,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_resolve_signer_without_get_signer() {
-        let wallet = LocalWallet::new(&mut thread_rng());
+        let wallet = PrivateKeySigner::random();
         let original_address = wallet.address();
 
         let builder = OrderBuilder::new(wallet, Chain::Amoy, None, None, None);

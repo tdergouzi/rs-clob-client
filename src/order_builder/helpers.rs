@@ -5,31 +5,10 @@ use crate::types::{
     UserMarketOrder, UserOrder,
 };
 use crate::utilities::{decimal_places, round_down, round_normal, round_up};
-use alloy_primitives::{Address as AlloyAddress, U256};
+use alloy_primitives::{Address, U256};
 use alloy_signer_local::PrivateKeySigner;
-use ethers::signers::LocalWallet;
 use rs_order_utils::{ExchangeOrderBuilder, OrderData, SignatureType, SignedOrder};
 use std::str::FromStr;
-
-fn ethers_to_alloy_address(addr: ethers::types::Address) -> AlloyAddress {
-    let bytes = addr.as_fixed_bytes();
-    AlloyAddress::from_slice(bytes)
-}
-
-/// Convert ethers LocalWallet to alloy PrivateKeySigner
-pub(crate) fn convert_wallet(wallet: &LocalWallet) -> ClobResult<PrivateKeySigner> {
-    // Get the private key bytes from ethers wallet
-    let private_key_bytes = wallet.signer().to_bytes();
-
-    // Convert GenericArray to B256 (FixedBytes<32>)
-    let mut bytes = [0u8; 32];
-    bytes.copy_from_slice(&private_key_bytes[..]);
-    let b256 = alloy_primitives::B256::from(bytes);
-
-    // Create alloy PrivateKeySigner from B256
-    PrivateKeySigner::from_bytes(&b256)
-        .map_err(|e| ClobError::SigningError(format!("Failed to convert wallet: {}", e)))
-}
 
 pub fn get_rounding_config(tick_size: TickSize) -> RoundConfig {
     match tick_size {
@@ -238,7 +217,7 @@ pub async fn build_order(
     chain_id: u64,
     order_data: OrderData,
 ) -> ClobResult<SignedOrder> {
-    let exchange_addr = AlloyAddress::from_str(exchange_address)
+    let exchange_addr = Address::from_str(exchange_address)
         .map_err(|e| ClobError::Other(format!("Invalid exchange address: {}", e)))?;
 
     let builder = ExchangeOrderBuilder::new(exchange_addr, chain_id, signer, None);
@@ -256,8 +235,8 @@ fn parse_units(value: f64, decimals: u8) -> U256 {
 }
 
 pub fn build_order_creation_args(
-    signer_address: AlloyAddress,
-    maker: AlloyAddress,
+    signer_address: Address,
+    maker: Address,
     signature_type: SignatureType,
     user_order: &UserOrder,
     round_config: &RoundConfig,
@@ -272,10 +251,7 @@ pub fn build_order_creation_args(
     let maker_amount = parse_units(raw_amounts.raw_maker_amt, COLLATERAL_TOKEN_DECIMALS);
     let taker_amount = parse_units(raw_amounts.raw_taker_amt, COLLATERAL_TOKEN_DECIMALS);
 
-    let taker = user_order
-        .taker
-        .map(ethers_to_alloy_address)
-        .unwrap_or(AlloyAddress::ZERO);
+    let taker = user_order.taker.unwrap_or(Address::ZERO);
 
     let fee_rate_bps = U256::from(user_order.fee_rate_bps.unwrap_or(0));
     let nonce = U256::from(user_order.nonce.unwrap_or(0));
@@ -305,19 +281,17 @@ pub fn build_order_creation_args(
 }
 
 pub async fn create_order(
-    wallet: LocalWallet,
+    wallet: PrivateKeySigner,
     chain_id: Chain,
     signature_type: SignatureType,
-    funder_address: Option<ethers::types::Address>,
+    funder_address: Option<Address>,
     user_order: &UserOrder,
     options: &CreateOrderOptions,
 ) -> ClobResult<SignedOrder> {
-    // Convert wallet to alloy signer
-    let signer = convert_wallet(&wallet)?;
-    let signer_address = signer.address();
-    let maker = funder_address
-        .map(ethers_to_alloy_address)
-        .unwrap_or(signer_address);
+    use alloy_signer::Signer;
+    
+    let signer_address = wallet.address();
+    let maker = funder_address.unwrap_or(signer_address);
     let contract_config =
         get_contract_config(chain_id.chain_id()).map_err(|e| ClobError::Other(e))?;
 
@@ -337,12 +311,12 @@ pub async fn create_order(
         contract_config.exchange
     };
 
-    build_order(signer, exchange_contract, chain_id.chain_id(), order_data).await
+    build_order(wallet, exchange_contract, chain_id.chain_id(), order_data).await
 }
 
 pub fn build_market_order_creation_args(
-    signer_address: AlloyAddress,
-    maker: AlloyAddress,
+    signer_address: Address,
+    maker: Address,
     signature_type: SignatureType,
     user_market_order: &UserMarketOrder,
     round_config: &RoundConfig,
@@ -359,10 +333,7 @@ pub fn build_market_order_creation_args(
     let maker_amount = parse_units(raw_amounts.raw_maker_amt, COLLATERAL_TOKEN_DECIMALS);
     let taker_amount = parse_units(raw_amounts.raw_taker_amt, COLLATERAL_TOKEN_DECIMALS);
 
-    let taker = user_market_order
-        .taker
-        .map(ethers_to_alloy_address)
-        .unwrap_or(AlloyAddress::ZERO);
+    let taker = user_market_order.taker.unwrap_or(Address::ZERO);
 
     let fee_rate_bps = U256::from(user_market_order.fee_rate_bps.unwrap_or(0));
     let nonce = U256::from(user_market_order.nonce.unwrap_or(0));
@@ -391,19 +362,17 @@ pub fn build_market_order_creation_args(
 }
 
 pub async fn create_market_order(
-    wallet: LocalWallet,
+    wallet: PrivateKeySigner,
     chain_id: Chain,
     signature_type: SignatureType,
-    funder_address: Option<ethers::types::Address>,
+    funder_address: Option<Address>,
     user_market_order: &UserMarketOrder,
     options: &CreateOrderOptions,
 ) -> ClobResult<SignedOrder> {
-    // Convert wallet to alloy signer
-    let signer = convert_wallet(&wallet)?;
-    let signer_address = signer.address();
-    let maker = funder_address
-        .map(ethers_to_alloy_address)
-        .unwrap_or(signer_address);
+    use alloy_signer::Signer;
+    
+    let signer_address = wallet.address();
+    let maker = funder_address.unwrap_or(signer_address);
     let contract_config =
         get_contract_config(chain_id.chain_id()).map_err(|e| ClobError::Other(e))?;
 
@@ -423,7 +392,7 @@ pub async fn create_market_order(
         contract_config.exchange
     };
 
-    build_order(signer, exchange_contract, chain_id.chain_id(), order_data).await
+    build_order(wallet, exchange_contract, chain_id.chain_id(), order_data).await
 }
 
 #[cfg(test)]

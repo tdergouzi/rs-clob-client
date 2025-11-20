@@ -1,11 +1,12 @@
 use crate::errors::ClobResult;
 use crate::signing::eip712::build_clob_eip712_signature;
 use crate::types::L1PolyHeader;
-use ethers::signers::{LocalWallet, Signer};
+use alloy_signer::Signer;
+use alloy_signer_local::PrivateKeySigner;
 
 /// Creates L1 authentication headers using EIP-712 signature for API key management
 pub async fn create_l1_headers(
-    wallet: &LocalWallet,
+    wallet: &PrivateKeySigner,
     chain_id: u64,
     nonce: Option<u64>,
     timestamp: Option<u64>,
@@ -20,7 +21,7 @@ pub async fn create_l1_headers(
     let n = nonce.unwrap_or(0);
 
     let signature = build_clob_eip712_signature(wallet, chain_id, ts, n).await?;
-    let address = format!("{:?}", wallet.address());
+    let address = format!("{:#x}", wallet.address());
 
     Ok(L1PolyHeader {
         poly_address: address,

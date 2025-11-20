@@ -1,4 +1,4 @@
-use ethers::types::Address;
+use alloy_primitives::Address;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

@@ -6,7 +6,7 @@ use crate::headers::l2::{create_l2_headers, inject_builder_headers};
 use crate::http::HttpClient;
 use crate::order_builder::{calculate_buy_market_price, calculate_sell_market_price, OrderBuilder};
 use crate::types::*;
-use ethers::signers::LocalWallet;
+use alloy_signer_local::PrivateKeySigner;
 use rs_builder_signing_sdk::{BuilderConfig, BuilderHeaderPayload};
 use rs_order_utils::SignedOrder;
 use serde::Deserialize;
@@ -25,7 +25,7 @@ pub struct ClobClient {
     http_client: HttpClient,
 
     /// Wallet for L1 authentication (optional)
-    wallet: Option<LocalWallet>,
+    wallet: Option<PrivateKeySigner>,
 
     /// API credentials for L2 authentication (optional)
     creds: Option<ApiKeyCreds>,
@@ -75,7 +75,7 @@ impl ClobClient {
     pub fn new(
         host: String,
         chain_id: Chain,
-        wallet: Option<LocalWallet>,
+        wallet: Option<PrivateKeySigner>,
         creds: Option<ApiKeyCreds>,
         signature_type: Option<u8>,
         funder_address: Option<String>,
@@ -103,7 +103,7 @@ impl ClobClient {
         // Parse funder address if provided
         let funder_addr = funder_address.as_ref().and_then(|addr| {
             use std::str::FromStr;
-            ethers::types::Address::from_str(addr).ok()
+            alloy_primitives::Address::from_str(addr).ok()
         });
 
         // Initialize OrderBuilder only if wallet is provided

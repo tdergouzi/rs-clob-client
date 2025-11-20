@@ -1,12 +1,13 @@
 use crate::errors::ClobResult;
 use crate::signing::hmac::build_poly_hmac_signature;
 use crate::types::{ApiKeyCreds, L2PolyHeader, L2WithBuilderHeader};
-use ethers::signers::{LocalWallet, Signer};
+use alloy_signer::Signer;
+use alloy_signer_local::PrivateKeySigner;
 use rs_builder_signing_sdk::BuilderHeaderPayload;
 
 /// Creates L2 authentication headers using HMAC-SHA256 for trading operations
 pub async fn create_l2_headers(
-    wallet: &LocalWallet,
+    wallet: &PrivateKeySigner,
     creds: &ApiKeyCreds,
     method: &str,
     request_path: &str,
@@ -21,7 +22,7 @@ pub async fn create_l2_headers(
     });
 
     let signature = build_poly_hmac_signature(&creds.secret, ts, method, request_path, body)?;
-    let address = format!("{:?}", wallet.address());
+    let address = format!("{:#x}", wallet.address());
 
     Ok(L2PolyHeader {
         poly_address: address,
