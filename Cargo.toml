@@ -6,6 +6,7 @@ authors = ["Ted"]
 description = "Rust client for Polymarket's CLOB (Central Limit Order Book)"
 license = "MIT"
 repository = "https://github.com/tdergouzi/rs-clob-client"
+homepage = "https://github.com/tdergouzi/rs-clob-client"
 keywords = ["polymarket", "clob", "trading", "ethereum", "web3"]
 
 [dependencies]

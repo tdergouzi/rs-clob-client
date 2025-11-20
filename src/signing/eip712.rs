@@ -23,7 +23,8 @@ impl ClobAuth {
     /// Compute the EIP-712 domain separator
     fn domain_separator(chain_id: u64) -> B256 {
         // EIP712Domain(string name,string version,uint256 chainId)
-        let domain_type_hash = keccak256(b"EIP712Domain(string name,string version,uint256 chainId)");
+        let domain_type_hash =
+            keccak256(b"EIP712Domain(string name,string version,uint256 chainId)");
         let name_hash = keccak256(CLOB_DOMAIN_NAME.as_bytes());
         let version_hash = keccak256(CLOB_VERSION.as_bytes());
 
@@ -32,7 +33,7 @@ impl ClobAuth {
         encoded.extend_from_slice(domain_type_hash.as_slice());
         encoded.extend_from_slice(name_hash.as_slice());
         encoded.extend_from_slice(version_hash.as_slice());
-        
+
         // Encode chain_id as uint256 (32 bytes, big-endian)
         let chain_id_u256 = U256::from(chain_id);
         encoded.extend_from_slice(&chain_id_u256.to_be_bytes::<32>());
@@ -49,12 +50,12 @@ impl ClobAuth {
         // Encode: keccak256(abi.encode(typeHash, address, keccak256(timestamp), nonce, keccak256(message)))
         let mut encoded = Vec::new();
         encoded.extend_from_slice(type_hash.as_slice());
-        
+
         // Encode address as 32 bytes (left-padded to 32 bytes)
         let mut address_bytes = [0u8; 32];
         address_bytes[12..].copy_from_slice(self.address.as_slice());
         encoded.extend_from_slice(&address_bytes);
-        
+
         encoded.extend_from_slice(timestamp_hash.as_slice());
         encoded.extend_from_slice(&self.nonce.to_be_bytes::<32>());
         encoded.extend_from_slice(message_hash.as_slice());
@@ -114,7 +115,7 @@ mod tests {
     async fn test_eip712_signature() {
         let wallet = PrivateKeySigner::random();
         let result = build_clob_eip712_signature(&wallet, 137, 1234567890, 0).await;
-        
+
         assert!(result.is_ok());
         let signature = result.unwrap();
         assert!(signature.starts_with("0x"));

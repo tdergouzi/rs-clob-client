@@ -570,10 +570,8 @@ impl ClobClient {
                 next_cursor: String,
             }
 
-            let response: RewardsResponse = self
-                .http_client
-                .get(&endpoint, None, Some(params))
-                .await?;
+            let response: RewardsResponse =
+                self.http_client.get(&endpoint, None, Some(params)).await?;
 
             next_cursor = response.next_cursor;
             results.extend(response.data);
@@ -607,10 +605,8 @@ impl ClobClient {
                 next_cursor: String,
             }
 
-            let response: RewardsResponse = self
-                .http_client
-                .get(&endpoint, None, Some(params))
-                .await?;
+            let response: RewardsResponse =
+                self.http_client.get(&endpoint, None, Some(params)).await?;
 
             next_cursor = response.next_cursor;
             results.extend(response.data);
@@ -1380,7 +1376,10 @@ impl ClobClient {
 
             let mut query_params = HashMap::new();
             query_params.insert("date".to_string(), date.to_string());
-            query_params.insert("signature_type".to_string(), self.signature_type.to_string());
+            query_params.insert(
+                "signature_type".to_string(),
+                self.signature_type.to_string(),
+            );
             query_params.insert("next_cursor".to_string(), next_cursor.clone());
 
             #[derive(Deserialize)]
@@ -1463,7 +1462,10 @@ impl ClobClient {
 
             let mut query_params = HashMap::new();
             query_params.insert("date".to_string(), date.to_string());
-            query_params.insert("signature_type".to_string(), self.signature_type.to_string());
+            query_params.insert(
+                "signature_type".to_string(),
+                self.signature_type.to_string(),
+            );
             query_params.insert("next_cursor".to_string(), next_cursor.clone());
             query_params.insert("order_by".to_string(), order_by.to_string());
             query_params.insert("position".to_string(), position.to_string());
@@ -1673,9 +1675,7 @@ impl ClobClient {
             .as_ref()
             .ok_or(ClobError::L1AuthUnavailable)?;
 
-        let signed_order = order_builder
-            .build_order(&order, &create_options)
-            .await?;
+        let signed_order = order_builder.build_order(&order, &create_options).await?;
         self.signed_order_to_json(signed_order)
     }
 

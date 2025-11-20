@@ -43,7 +43,7 @@ mod tests {
     fn test_hmac_signature() {
         let secret = general_purpose::STANDARD.encode("test_secret_key");
         let sig = build_poly_hmac_signature(&secret, 1234567890, "GET", "/test", None);
-        
+
         assert!(sig.is_ok());
         let signature = sig.unwrap();
         assert!(!signature.contains('+'));
@@ -55,7 +55,7 @@ mod tests {
         let secret = general_purpose::STANDARD.encode("test_secret");
         let body = r#"{"tokenID":"123","price":0.5}"#;
         let sig = build_poly_hmac_signature(&secret, 1234567890, "POST", "/order", Some(body));
-        
+
         assert!(sig.is_ok());
     }
 }
