@@ -139,14 +139,12 @@ impl ClobClient {
 
     /// Gets server status
     pub async fn get_ok(&self) -> ClobResult<serde_json::Value> {
-        let endpoint = format!("{}/", self.host);
-        self.http_client.get(&endpoint, None, None).await
+        self.http_client.get("/", None, None).await
     }
 
     /// Gets server time
     pub async fn get_server_time(&self) -> ClobResult<u64> {
-        let endpoint = format!("{}{}", self.host, endpoints::TIME);
-        self.http_client.get(&endpoint, None, None).await
+        self.http_client.get(endpoints::TIME, None, None).await
     }
 
     /// Gets sampling simplified markets with pagination
@@ -155,16 +153,11 @@ impl ClobClient {
         next_cursor: Option<String>,
     ) -> ClobResult<PaginationPayload> {
         let cursor = next_cursor.unwrap_or_else(|| INITIAL_CURSOR.to_string());
-        let endpoint = format!(
-            "{}{}",
-            self.host,
-            endpoints::GET_SAMPLING_SIMPLIFIED_MARKETS
-        );
 
         let mut params = HashMap::new();
         params.insert("next_cursor".to_string(), cursor);
 
-        self.http_client.get(&endpoint, None, Some(params)).await
+        self.http_client.get(endpoints::GET_SAMPLING_SIMPLIFIED_MARKETS, None, Some(params)).await
     }
 
     /// Gets sampling markets with pagination
@@ -173,12 +166,11 @@ impl ClobClient {
         next_cursor: Option<String>,
     ) -> ClobResult<PaginationPayload> {
         let cursor = next_cursor.unwrap_or_else(|| INITIAL_CURSOR.to_string());
-        let endpoint = format!("{}{}", self.host, endpoints::GET_SAMPLING_MARKETS);
 
         let mut params = HashMap::new();
         params.insert("next_cursor".to_string(), cursor);
 
-        self.http_client.get(&endpoint, None, Some(params)).await
+        self.http_client.get(endpoints::GET_SAMPLING_MARKETS, None, Some(params)).await
     }
 
     /// Gets simplified markets with pagination
@@ -187,39 +179,36 @@ impl ClobClient {
         next_cursor: Option<String>,
     ) -> ClobResult<PaginationPayload> {
         let cursor = next_cursor.unwrap_or_else(|| INITIAL_CURSOR.to_string());
-        let endpoint = format!("{}{}", self.host, endpoints::GET_SIMPLIFIED_MARKETS);
 
         let mut params = HashMap::new();
         params.insert("next_cursor".to_string(), cursor);
 
-        self.http_client.get(&endpoint, None, Some(params)).await
+        self.http_client.get(endpoints::GET_SIMPLIFIED_MARKETS, None, Some(params)).await
     }
 
     /// Gets all markets with pagination
     pub async fn get_markets(&self, next_cursor: Option<String>) -> ClobResult<PaginationPayload> {
         let cursor = next_cursor.unwrap_or_else(|| INITIAL_CURSOR.to_string());
-        let endpoint = format!("{}{}", self.host, endpoints::GET_MARKETS);
+        let endpoint = endpoints::GET_MARKETS;
 
         let mut params = HashMap::new();
         params.insert("next_cursor".to_string(), cursor);
 
-        self.http_client.get(&endpoint, None, Some(params)).await
+        self.http_client.get(endpoint, None, Some(params)).await
     }
 
     /// Gets a specific market by condition ID
     pub async fn get_market(&self, condition_id: &str) -> ClobResult<serde_json::Value> {
-        let endpoint = format!("{}{}{}", self.host, endpoints::GET_MARKET, condition_id);
+        let endpoint = format!("{}{}", endpoints::GET_MARKET, condition_id);
         self.http_client.get(&endpoint, None, None).await
     }
 
     /// Gets orderbook for a token
     pub async fn get_order_book(&self, token_id: &str) -> ClobResult<OrderBookSummary> {
-        let endpoint = format!("{}{}", self.host, endpoints::GET_ORDER_BOOK);
-
         let mut params = HashMap::new();
         params.insert("token_id".to_string(), token_id.to_string());
 
-        self.http_client.get(&endpoint, None, Some(params)).await
+        self.http_client.get(endpoints::GET_ORDER_BOOK, None, Some(params)).await
     }
 
     /// Gets multiple orderbooks
@@ -227,9 +216,8 @@ impl ClobClient {
         &self,
         params: Vec<BookParams>,
     ) -> ClobResult<Vec<OrderBookSummary>> {
-        let endpoint = format!("{}{}", self.host, endpoints::GET_ORDER_BOOKS);
         self.http_client
-            .post(&endpoint, None, Some(params), None)
+            .post(endpoints::GET_ORDER_BOOKS, None, Some(params), None)
             .await
     }
 
@@ -241,7 +229,6 @@ impl ClobClient {
         }
 
         // Fetch from API
-        let endpoint = format!("{}{}", self.host, endpoints::GET_TICK_SIZE);
         let mut params = HashMap::new();
         params.insert("token_id".to_string(), token_id.to_string());
 
@@ -251,7 +238,7 @@ impl ClobClient {
         }
 
         let response: TickSizeResponse =
-            self.http_client.get(&endpoint, None, Some(params)).await?;
+            self.http_client.get(endpoints::GET_TICK_SIZE, None, Some(params)).await?;
         let tick_size =
             crate::utilities::parse_tick_size(&response.minimum_tick_size).ok_or_else(|| {
                 ClobError::Other(format!("Invalid tick size: {}", response.minimum_tick_size))
@@ -273,7 +260,6 @@ impl ClobClient {
         }
 
         // Fetch from API
-        let endpoint = format!("{}{}", self.host, endpoints::GET_NEG_RISK);
         let mut params = HashMap::new();
         params.insert("token_id".to_string(), token_id.to_string());
 
@@ -282,7 +268,7 @@ impl ClobClient {
             neg_risk: bool,
         }
 
-        let response: NegRiskResponse = self.http_client.get(&endpoint, None, Some(params)).await?;
+        let response: NegRiskResponse = self.http_client.get(endpoints::GET_NEG_RISK, None, Some(params)).await?;
 
         // Cache the result
         self.neg_risk
@@ -300,7 +286,6 @@ impl ClobClient {
         }
 
         // Fetch from API
-        let endpoint = format!("{}{}", self.host, endpoints::GET_FEE_RATE);
         let mut params = HashMap::new();
         params.insert("token_id".to_string(), token_id.to_string());
 
@@ -310,7 +295,7 @@ impl ClobClient {
             maker_base_fee_rate_bps: u32,
         }
 
-        let response: FeeRateResponse = self.http_client.get(&endpoint, None, Some(params)).await?;
+        let response: FeeRateResponse = self.http_client.get(endpoints::GET_FEE_RATE, None, Some(params)).await?;
 
         // Cache the result
         self.fee_rates
@@ -328,67 +313,56 @@ impl ClobClient {
 
     /// Gets midpoint price for a token
     pub async fn get_midpoint(&self, token_id: &str) -> ClobResult<serde_json::Value> {
-        let endpoint = format!("{}{}", self.host, endpoints::GET_MIDPOINT);
-
         let mut params = HashMap::new();
         params.insert("token_id".to_string(), token_id.to_string());
 
-        self.http_client.get(&endpoint, None, Some(params)).await
+        self.http_client.get(endpoints::GET_MIDPOINT, None, Some(params)).await
     }
 
     /// Gets multiple midpoints
     pub async fn get_midpoints(&self, params: Vec<BookParams>) -> ClobResult<serde_json::Value> {
-        let endpoint = format!("{}{}", self.host, endpoints::GET_MIDPOINTS);
         self.http_client
-            .post(&endpoint, None, Some(params), None)
+            .post(endpoints::GET_MIDPOINTS, None, Some(params), None)
             .await
     }
 
     /// Gets price for a token and side
     pub async fn get_price(&self, token_id: &str, side: Side) -> ClobResult<serde_json::Value> {
-        let endpoint = format!("{}{}", self.host, endpoints::GET_PRICE);
-
         let mut params = HashMap::new();
         params.insert("token_id".to_string(), token_id.to_string());
         params.insert("side".to_string(), side.to_uppercase());
 
-        self.http_client.get(&endpoint, None, Some(params)).await
+        self.http_client.get(endpoints::GET_PRICE, None, Some(params)).await
     }
 
     /// Gets multiple prices
     pub async fn get_prices(&self, params: Vec<BookParams>) -> ClobResult<serde_json::Value> {
-        let endpoint = format!("{}{}", self.host, endpoints::GET_PRICES);
         self.http_client
-            .post(&endpoint, None, Some(params), None)
+            .post(endpoints::GET_PRICES, None, Some(params), None)
             .await
     }
 
     /// Gets spread for a token
     pub async fn get_spread(&self, token_id: &str) -> ClobResult<serde_json::Value> {
-        let endpoint = format!("{}{}", self.host, endpoints::GET_SPREAD);
-
         let mut params = HashMap::new();
         params.insert("token_id".to_string(), token_id.to_string());
 
-        self.http_client.get(&endpoint, None, Some(params)).await
+        self.http_client.get(endpoints::GET_SPREAD, None, Some(params)).await
     }
 
     /// Gets multiple spreads
     pub async fn get_spreads(&self, params: Vec<BookParams>) -> ClobResult<serde_json::Value> {
-        let endpoint = format!("{}{}", self.host, endpoints::GET_SPREADS);
         self.http_client
-            .post(&endpoint, None, Some(params), None)
+            .post(endpoints::GET_SPREADS, None, Some(params), None)
             .await
     }
 
     /// Gets last trade price for a token
     pub async fn get_last_trade_price(&self, token_id: &str) -> ClobResult<serde_json::Value> {
-        let endpoint = format!("{}{}", self.host, endpoints::GET_LAST_TRADE_PRICE);
-
         let mut params = HashMap::new();
         params.insert("token_id".to_string(), token_id.to_string());
 
-        self.http_client.get(&endpoint, None, Some(params)).await
+        self.http_client.get(endpoints::GET_LAST_TRADE_PRICE, None, Some(params)).await
     }
 
     /// Gets last trade prices for multiple tokens
@@ -396,9 +370,8 @@ impl ClobClient {
         &self,
         params: Vec<BookParams>,
     ) -> ClobResult<serde_json::Value> {
-        let endpoint = format!("{}{}", self.host, endpoints::GET_LAST_TRADES_PRICES);
         self.http_client
-            .post(&endpoint, None, Some(params), None)
+            .post(endpoints::GET_LAST_TRADES_PRICES, None, Some(params), None)
             .await
     }
 
@@ -407,8 +380,6 @@ impl ClobClient {
         &self,
         params: PriceHistoryFilterParams,
     ) -> ClobResult<Vec<MarketPrice>> {
-        let endpoint = format!("{}{}", self.host, endpoints::GET_PRICES_HISTORY);
-
         let mut query_params = HashMap::new();
 
         if let Some(market) = params.market {
@@ -425,7 +396,7 @@ impl ClobClient {
         }
 
         self.http_client
-            .get(&endpoint, None, Some(query_params))
+            .get(endpoints::GET_PRICES_HISTORY, None, Some(query_params))
             .await
     }
 
@@ -452,10 +423,9 @@ impl ClobClient {
             .to_headers();
 
         // Make request
-        let endpoint = format!("{}{}", self.host, endpoints::CREATE_API_KEY);
         let response: ApiKeyRaw = self
             .http_client
-            .post(&endpoint, Some(headers), None::<()>, None)
+            .post(endpoints::CREATE_API_KEY, Some(headers), None::<()>, None)
             .await?;
 
         Ok(response.into())
@@ -480,8 +450,7 @@ impl ClobClient {
             .to_headers();
 
         // Make request
-        let endpoint = format!("{}{}", self.host, endpoints::DERIVE_API_KEY);
-        let response: ApiKeyRaw = self.http_client.get(&endpoint, Some(headers), None).await?;
+        let response: ApiKeyRaw = self.http_client.get(endpoints::DERIVE_API_KEY, Some(headers), None).await?;
 
         Ok(response.into())
     }
@@ -520,8 +489,7 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
-        self.http_client.get(&endpoint, Some(headers), None).await
+        self.http_client.get(endpoint_path, Some(headers), None).await
     }
 
     /// Gets closed-only mode status (checks if account is restricted)
@@ -542,8 +510,7 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
-        self.http_client.get(&endpoint, Some(headers), None).await
+        self.http_client.get(endpoint_path, Some(headers), None).await
     }
 
     /// Deletes the current API key
@@ -564,9 +531,8 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         self.http_client
-            .delete(&endpoint, Some(headers), None::<()>, None)
+            .delete(endpoint_path, Some(headers), None::<()>, None)
             .await
     }
 
@@ -592,8 +558,7 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
-        self.http_client.get(&endpoint, Some(headers), None).await
+        self.http_client.get(&endpoint_path, Some(headers), None).await
     }
 
     // ===================================
@@ -640,7 +605,6 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         let mut query_params = HashMap::new();
 
         // Add cursor
@@ -672,7 +636,7 @@ impl ClobClient {
         }
 
         self.http_client
-            .get(&endpoint, Some(headers), Some(query_params))
+            .get(endpoint_path, Some(headers), Some(query_params))
             .await
     }
 
@@ -695,7 +659,6 @@ impl ClobClient {
             ._get_builder_headers("GET", endpoint_path, None)
             .await?;
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         let mut query_params = HashMap::new();
 
         // Add cursor
@@ -718,7 +681,7 @@ impl ClobClient {
         }
 
         self.http_client
-            .get(&endpoint, Some(headers), Some(query_params))
+            .get(endpoint_path, Some(headers), Some(query_params))
             .await
     }
 
@@ -744,8 +707,7 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
-        self.http_client.get(&endpoint, Some(headers), None).await
+        self.http_client.get(endpoint_path, Some(headers), None).await
     }
 
     /// Marks notifications as read
@@ -766,7 +728,6 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         let mut query_params = HashMap::new();
 
         if !params.ids.is_empty() {
@@ -775,7 +736,7 @@ impl ClobClient {
 
         let _: serde_json::Value = self
             .http_client
-            .delete(&endpoint, Some(headers), None::<()>, Some(query_params))
+            .delete(endpoint_path, Some(headers), None::<()>, Some(query_params))
             .await?;
 
         Ok(())
@@ -806,7 +767,6 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         let mut query_params = HashMap::new();
         let asset_type_str = match params.asset_type {
             AssetType::Collateral => "COLLATERAL",
@@ -819,7 +779,7 @@ impl ClobClient {
         }
 
         self.http_client
-            .get(&endpoint, Some(headers), Some(query_params))
+            .get(endpoint_path, Some(headers), Some(query_params))
             .await
     }
 
@@ -841,7 +801,6 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         let mut query_params = HashMap::new();
         let asset_type_str = match params.asset_type {
             AssetType::Collateral => "COLLATERAL",
@@ -855,7 +814,7 @@ impl ClobClient {
 
         let _: serde_json::Value = self
             .http_client
-            .post(&endpoint, Some(headers), None::<()>, Some(query_params))
+            .post(endpoint_path, Some(headers), None::<()>, Some(query_params))
             .await?;
 
         Ok(())
@@ -1057,7 +1016,6 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         let mut query_params = HashMap::new();
 
         if let Some(p) = params {
@@ -1078,7 +1036,7 @@ impl ClobClient {
             Some(query_params)
         };
 
-        self.http_client.get(&endpoint, Some(headers), params).await
+        self.http_client.get(endpoint_path, Some(headers), params).await
     }
 
     /// Posts an order to the exchange
@@ -1121,9 +1079,8 @@ impl ClobClient {
         };
 
         // Make request
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         self.http_client
-            .post(&endpoint, Some(final_headers), Some(order_payload), None)
+            .post(endpoint_path, Some(final_headers), Some(order_payload), None)
             .await
     }
 
@@ -1173,9 +1130,8 @@ impl ClobClient {
             headers.to_headers()
         };
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         self.http_client
-            .post(&endpoint, Some(final_headers), Some(payloads), None)
+            .post(endpoint_path, Some(final_headers), Some(payloads), None)
             .await
     }
 
@@ -1209,9 +1165,8 @@ impl ClobClient {
         .await?
         .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         self.http_client
-            .delete(&endpoint, Some(headers), Some(payload), None)
+            .delete(endpoint_path, Some(headers), Some(payload), None)
             .await
     }
 
@@ -1248,9 +1203,8 @@ impl ClobClient {
         .await?
         .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         self.http_client
-            .delete(&endpoint, Some(headers), Some(payload), None)
+            .delete(endpoint_path, Some(headers), Some(payload), None)
             .await
     }
 
@@ -1272,9 +1226,8 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         self.http_client
-            .delete(&endpoint, Some(headers), None::<()>, None)
+            .delete(endpoint_path, Some(headers), None::<()>, None)
             .await
     }
 
@@ -1308,9 +1261,8 @@ impl ClobClient {
         .await?
         .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         self.http_client
-            .delete(&endpoint, Some(headers), Some(params), None)
+            .delete(endpoint_path, Some(headers), Some(params), None)
             .await
     }
 
@@ -1332,12 +1284,11 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         let mut query_params = HashMap::new();
         query_params.insert("order_id".to_string(), params.order_id);
 
         self.http_client
-            .get(&endpoint, Some(headers), Some(query_params))
+            .get(endpoint_path, Some(headers), Some(query_params))
             .await
     }
 
@@ -1362,12 +1313,11 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         let mut query_params = HashMap::new();
         query_params.insert("order_ids".to_string(), params.order_ids.join(","));
 
         self.http_client
-            .get(&endpoint, Some(headers), Some(query_params))
+            .get(endpoint_path, Some(headers), Some(query_params))
             .await
     }
 
@@ -1383,7 +1333,6 @@ impl ClobClient {
         let creds = self.creds.as_ref().ok_or(ClobError::L2AuthNotAvailable)?;
 
         let endpoint_path = endpoints::GET_EARNINGS_FOR_USER_FOR_DAY;
-        let endpoint = format!("{}{}", self.host, endpoint_path);
 
         let mut results = Vec::new();
         let mut next_cursor = INITIAL_CURSOR.to_string();
@@ -1415,7 +1364,7 @@ impl ClobClient {
 
             let response: EarningsResponse = self
                 .http_client
-                .get(&endpoint, Some(headers), Some(query_params))
+                .get(endpoint_path, Some(headers), Some(query_params))
                 .await?;
 
             next_cursor = response.next_cursor;
@@ -1446,12 +1395,11 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         let mut query_params = HashMap::new();
         query_params.insert("date".to_string(), date.to_string());
 
         self.http_client
-            .get(&endpoint, Some(headers), Some(query_params))
+            .get(endpoint_path, Some(headers), Some(query_params))
             .await
     }
 
@@ -1469,7 +1417,6 @@ impl ClobClient {
         let creds = self.creds.as_ref().ok_or(ClobError::L2AuthNotAvailable)?;
 
         let endpoint_path = endpoints::GET_REWARDS_EARNINGS_PERCENTAGES;
-        let endpoint = format!("{}{}", self.host, endpoint_path);
 
         let mut results = Vec::new();
         let mut next_cursor = INITIAL_CURSOR.to_string();
@@ -1504,7 +1451,7 @@ impl ClobClient {
 
             let response: UserRewardsEarningResponse = self
                 .http_client
-                .get(&endpoint, Some(headers), Some(query_params))
+                .get(endpoint_path, Some(headers), Some(query_params))
                 .await?;
 
             next_cursor = response.next_cursor;
@@ -1532,14 +1479,11 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
-        self.http_client.get(&endpoint, Some(headers), None).await
+        self.http_client.get(endpoint_path, Some(headers), None).await
     }
 
     /// Gets current reward programs (with automatic pagination)
     pub async fn get_current_rewards(&self) -> ClobResult<Vec<MarketReward>> {
-        let endpoint = format!("{}{}", self.host, endpoints::GET_REWARDS_MARKETS_CURRENT);
-
         let mut results = Vec::new();
         let mut next_cursor = INITIAL_CURSOR.to_string();
 
@@ -1554,7 +1498,7 @@ impl ClobClient {
             }
 
             let response: RewardsResponse =
-                self.http_client.get(&endpoint, None, Some(params)).await?;
+                self.http_client.get(endpoints::GET_REWARDS_MARKETS_CURRENT, None, Some(params)).await?;
 
             next_cursor = response.next_cursor;
             results.extend(response.data);
@@ -1569,8 +1513,7 @@ impl ClobClient {
         condition_id: &str,
     ) -> ClobResult<Vec<MarketReward>> {
         let endpoint = format!(
-            "{}{}{}",
-            self.host,
+            "{}{}",
             endpoints::GET_REWARDS_MARKETS,
             condition_id
         );
@@ -1675,9 +1618,8 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         self.http_client
-            .post(&endpoint, Some(headers), None::<()>, None)
+            .post(endpoint_path, Some(headers), None::<()>, None)
             .await
     }
 
@@ -1699,8 +1641,7 @@ impl ClobClient {
             .await?
             .to_headers();
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
-        self.http_client.get(&endpoint, Some(headers), None).await
+        self.http_client.get(endpoint_path, Some(headers), None).await
     }
 
     /// Revokes a builder API key
@@ -1714,9 +1655,8 @@ impl ClobClient {
             ._get_builder_headers("DELETE", endpoint_path, None)
             .await?;
 
-        let endpoint = format!("{}{}", self.host, endpoint_path);
         self.http_client
-            .delete(&endpoint, Some(headers), None::<()>, None)
+            .delete(endpoint_path, Some(headers), None::<()>, None)
             .await
     }
 
