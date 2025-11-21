@@ -1,13 +1,11 @@
 use alloy_signer_local::PrivateKeySigner;
-use anyhow::Result;
-use dotenvy::dotenv;
-use rs_clob_client::{ApiKeyCreds, Chain, ClobClient, OrderType, Side, UserMarketOrder};
+use rs_clob_client::{client::ClobClient, types::{ApiKeyCreds, Chain}};
 use std::env;
 
-#[tokio::main]
-async fn main() -> Result<()> {
+/// Helper function to create an authenticated test client
+fn create_test_client() -> ClobClient {
     // Load environment variables from .env file
-    dotenv().ok();
+    dotenvy::dotenv().ok();
 
     // Parse private key from environment
     let pk = env::var("PK").expect("PK must be set");
@@ -35,7 +33,7 @@ async fn main() -> Result<()> {
     };
 
     // Create CLOB client
-    let clob_client = ClobClient::new(
+    ClobClient::new(
         host,
         chain_id,
         Some(wallet),
@@ -45,34 +43,23 @@ async fn main() -> Result<()> {
         None,     // geo_block_token
         false,    // use_server_time
         None,     // builder_config
-    );
+    )
+}
 
-    // YES token ID
-    let yes_token = "71321045679252212594626385532706912750332728571942532289631379312455583992563";
+#[tokio::test]
+async fn test_get_order() {
+    let client = create_test_client();
 
-    // Create a YES market sell order for the equivalent of 110 shares for the market price
-    let market_sell_order = clob_client
-        .create_market_order(
-            &UserMarketOrder {
-                token_id: yes_token.to_string(),
-                amount: 110.0, // SHARES
-                side: Side::Sell,
-                price: None,
-                fee_rate_bps: None,
-                nonce: None,
-                taker: None,
-                order_type: None,
-            },
-            None, // options
-        )
-        .await?;
+    // Get order by ID
+    let order = client
+        .get_order("0x831680cb77da95792af5a052c87c8abf9d2ae5cb21f275670bc0ff58f2823c5c")
+        .await
+        .expect("Failed to fetch order");
 
-    println!("Created Market SELL Order: {:#?}", market_sell_order);
+    // Assertions
+    assert!(!order.id.is_empty(), "Order ID should not be empty");
+    assert!(!order.status.is_empty(), "Order status should not be empty");
 
-    // Send it to the server
-    let response = clob_client.post_order(market_sell_order, OrderType::Fok).await?;
-    println!("Post Order Response: {:#?}", response);
-
-    Ok(())
+    println!("{:#?}", order);
 }
 

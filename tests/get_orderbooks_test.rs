@@ -1,12 +1,10 @@
-use anyhow::Result;
-use dotenvy::dotenv;
-use rs_clob_client::{BookParams, Chain, ClobClient, Side};
+use rs_clob_client::{client::ClobClient, types::{BookParams, Chain, Side}};
 use std::env;
 
-#[tokio::main]
-async fn main() -> Result<()> {
+/// Helper function to create a test client
+fn create_test_client() -> ClobClient {
     // Load environment variables from .env file
-    dotenv().ok();
+    dotenvy::dotenv().ok();
 
     // Get API host
     let host = env::var("CLOB_API_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
@@ -20,7 +18,7 @@ async fn main() -> Result<()> {
     };
 
     // Create CLOB client (no authentication needed for public endpoints)
-    let clob_client = ClobClient::new(
+    ClobClient::new(
         host,
         chain_id,
         None, // wallet
@@ -30,14 +28,19 @@ async fn main() -> Result<()> {
         None, // geo_block_token
         false, // use_server_time
         None, // builder_config
-    );
+    )
+}
+
+#[tokio::test]
+async fn test_get_orderbooks() {
+    let client = create_test_client();
 
     // Token IDs
     let yes_token = "71321045679252212594626385532706912750332728571942532289631379312455583992563";
     let no_token = "52114319501245915516055106046884209969926127482827954674443846427813813222426";
 
     // Get multiple orderbooks
-    let orderbooks = clob_client
+    let orderbooks = client
         .get_order_books(vec![
             BookParams {
                 token_id: yes_token.to_string(),
@@ -48,10 +51,12 @@ async fn main() -> Result<()> {
                 side: Side::Buy,
             },
         ])
-        .await?;
+        .await
+        .expect("Failed to fetch orderbooks");
+
+    // Assertions
+    assert_eq!(orderbooks.len(), 2, "Should receive 2 orderbooks");
 
     println!("Orderbooks: {:#?}", orderbooks);
-
-    Ok(())
 }
 

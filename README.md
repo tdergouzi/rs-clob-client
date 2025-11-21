@@ -225,8 +225,8 @@ cargo test
 # Run tests with output
 cargo test -- --nocapture
 
-# Run specific test
-cargo test test_name
+# Run specific test with output
+cargo test test_name -- --exact --nocapture
 
 # Build the library
 cargo build --release

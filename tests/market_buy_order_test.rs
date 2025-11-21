@@ -1,13 +1,14 @@
 use alloy_signer_local::PrivateKeySigner;
-use anyhow::Result;
-use dotenvy::dotenv;
-use rs_clob_client::{ApiKeyCreds, Chain, ClobClient, CreateOrderOptions, OrderType, Side, UserMarketOrder};
+use rs_clob_client::{
+    client::ClobClient,
+    types::{ApiKeyCreds, Chain, CreateOrderOptions, OrderType, Side, TickSize, UserMarketOrder},
+};
 use std::env;
 
-#[tokio::main]
-async fn main() -> Result<()> {
+/// Helper function to create an authenticated test client
+fn create_test_client() -> ClobClient {
     // Load environment variables from .env file
-    dotenv().ok();
+    dotenvy::dotenv().ok();
 
     // Parse private key from environment
     let pk = env::var("PK").expect("PK must be set");
@@ -35,7 +36,7 @@ async fn main() -> Result<()> {
     };
 
     // Create CLOB client
-    let clob_client = ClobClient::new(
+    ClobClient::new(
         host,
         chain_id,
         Some(wallet),
@@ -45,13 +46,18 @@ async fn main() -> Result<()> {
         None,     // geo_block_token
         false,    // use_server_time
         None,     // builder_config
-    );
+    )
+}
+
+#[tokio::test]
+async fn test_create_market_buy_order() {
+    let client = create_test_client();
 
     // YES token ID
     let yes_token = "71321045679252212594626385532706912750332728571942532289631379312455583992563";
 
     // Create a YES market buy order for the equivalent of 100 USDC for the market price
-    let market_buy_order = clob_client
+    let market_buy_order = client
         .create_market_order(
             &UserMarketOrder {
                 token_id: yes_token.to_string(),
@@ -65,18 +71,34 @@ async fn main() -> Result<()> {
             },
             None, // options
         )
-        .await?;
+        .await
+        .expect("Failed to create market buy order");
+
+    // Assertions
+    assert!(market_buy_order.is_object(), "Market buy order should be a valid JSON object");
 
     println!("Created Market BUY Order: {:#?}", market_buy_order);
 
     // Send it to the server
-    let response = clob_client.post_order(market_buy_order, OrderType::Fok).await?;
-    println!("Post Order Response: {:#?}", response);
+    let response = client
+        .post_order(market_buy_order, OrderType::Fok)
+        .await
+        .expect("Failed to post order");
 
-    // ------------------
+    assert!(response.is_object(), "Post order response should be a valid JSON object");
+
+    println!("Post Order Response: {:#?}", response);
+}
+
+#[tokio::test]
+async fn test_create_and_post_market_buy_order() {
+    let client = create_test_client();
+
+    // YES token ID
+    let yes_token = "71321045679252212594626385532706912750332728571942532289631379312455583992563";
 
     // Create the order and send it to the server in a single step
-    let resp2 = clob_client
+    let response = client
         .create_and_post_market_order(
             &UserMarketOrder {
                 token_id: yes_token.to_string(),
@@ -89,15 +111,17 @@ async fn main() -> Result<()> {
                 order_type: Some(OrderType::Fok), // or FAK
             },
             Some(CreateOrderOptions {
-                tick_size: rs_clob_client::TickSize::ZeroPointZeroOne,
+                tick_size: TickSize::ZeroPointZeroOne,
                 neg_risk: None,
             }),
             OrderType::Fok, // or FAK
         )
-        .await?;
+        .await
+        .expect("Failed to create and post market order");
 
-    println!("Create and Post Response: {:#?}", resp2);
+    // Assertions
+    assert!(response.is_object(), "Create and post response should be a valid JSON object");
 
-    Ok(())
+    println!("Create and Post Response: {:#?}", response);
 }
 
