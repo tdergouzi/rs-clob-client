@@ -298,6 +298,162 @@ pub struct Event {
     pub is_template: Option<bool>,
 }
 
+pub struct MarketParams {
+    pub limit: Option<u64>,
+    pub offset: Option<u64>,
+    pub order: Option<String>,
+    pub ascending: Option<bool>,
+    pub condition_id: Option<String>,
+    pub closed: Option<bool>,
+}
+
+/// Market from the /markets endpoint
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Market {
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub question: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub condition_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub slug: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub outcomes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub outcome_prices: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub liquidity: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume_num: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub liquidity_num: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub closed: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub archived: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub new: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub featured: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub restricted: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_date: Option<String>,
+    #[serde(rename = "startDateIso", skip_serializing_if = "Option::is_none")]
+    pub start_date_iso: Option<String>,
+    #[serde(rename = "endDateIso", skip_serializing_if = "Option::is_none")]
+    pub end_date_iso: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resolution_source: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub market_maker_address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enable_order_book: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub order_price_min_tick_size: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub order_min_size: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub clob_token_ids: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub neg_risk: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accepting_orders: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accepting_orders_timestamp: Option<String>,
+    // Fee structure
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maker_base_fee: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub taker_base_fee: Option<f64>,
+    // Volume metrics - time periods
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume24hr: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume1wk: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume1mo: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume1yr: Option<f64>,
+    // Volume metrics - CLOB
+    #[serde(rename = "volume24hrClob", skip_serializing_if = "Option::is_none")]
+    pub volume24hr_clob: Option<f64>,
+    #[serde(rename = "volume1wkClob", skip_serializing_if = "Option::is_none")]
+    pub volume1wk_clob: Option<f64>,
+    #[serde(rename = "volume1moClob", skip_serializing_if = "Option::is_none")]
+    pub volume1mo_clob: Option<f64>,
+    #[serde(rename = "volume1yrClob", skip_serializing_if = "Option::is_none")]
+    pub volume1yr_clob: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume_clob: Option<f64>,
+    // Volume metrics - AMM
+    #[serde(rename = "volume24hrAmm", skip_serializing_if = "Option::is_none")]
+    pub volume24hr_amm: Option<f64>,
+    #[serde(rename = "volume1wkAmm", skip_serializing_if = "Option::is_none")]
+    pub volume1wk_amm: Option<f64>,
+    #[serde(rename = "volume1moAmm", skip_serializing_if = "Option::is_none")]
+    pub volume1mo_amm: Option<f64>,
+    #[serde(rename = "volume1yrAmm", skip_serializing_if = "Option::is_none")]
+    pub volume1yr_amm: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume_amm: Option<f64>,
+    // Liquidity metrics
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub liquidity_clob: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub liquidity_amm: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub question_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub group_item_title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub group_item_threshold: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub closed_time: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resolved_by: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub submitted_by: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uma_resolution_status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub spread: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub best_bid: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub best_ask: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_trade_price: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub one_day_price_change: Option<f64>,
+    // Nested objects
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub events: Option<Vec<Event>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rewards_min_size: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rewards_max_spread: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cyom: Option<bool>,
+}
+
 /// Market trade event
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MarketTradeEvent {

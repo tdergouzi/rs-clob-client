@@ -21,15 +21,17 @@ pub mod endpoints {
 
     // Events
     pub const GET_EVENTS: &str = "/events";
-    pub const GET_EVENTS_BY_ID: &str = "/events/";
+    pub const GET_EVENT: &str = "/events/";
     pub const GET_EVENT_BY_SLUG: &str = "/events/slug/";
 
     // Markets
+    pub const GET_MARKETS: &str = "/markets";
+    pub const GET_MARKET: &str = "/markets/";
+    pub const GET_MARKET_BY_SLUG: &str = "/markets/slug/";
+
     pub const GET_SAMPLING_SIMPLIFIED_MARKETS: &str = "/sampling-simplified-markets";
     pub const GET_SAMPLING_MARKETS: &str = "/sampling-markets";
     pub const GET_SIMPLIFIED_MARKETS: &str = "/simplified-markets";
-    pub const GET_MARKETS: &str = "/markets";
-    pub const GET_MARKET: &str = "/markets/";
     pub const GET_ORDER_BOOK: &str = "/book";
     pub const GET_ORDER_BOOKS: &str = "/books";
     pub const GET_MIDPOINT: &str = "/midpoint";
