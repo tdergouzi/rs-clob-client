@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use super::primitives::{AssetType, PriceHistoryInterval, Side, TraderSide};
 use super::orders::MakerOrder;
+use super::primitives::{AssetType, PriceHistoryInterval, Side, TraderSide};
 
 // ============================================================================
 // Trading & Market Data
@@ -142,6 +142,38 @@ pub struct PaginationPayload {
     pub count: u32,
     pub next_cursor: String,
     pub data: Vec<serde_json::Value>,
+}
+
+pub struct TagParams {
+    pub limit: Option<u64>,
+    pub offset: Option<u64>,
+    pub order: Option<String>,
+    pub ascending: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Tag {
+    pub id: String,
+    pub label: String,
+    pub slug: String,
+    pub force_show: bool,
+    pub created_at: Option<String>,
+    pub updated_at: Option<String>,
+    pub published_at: Option<String>,
+    pub created_by: Option<i64>,
+    pub updated_by: Option<i64>,
+    pub force_hide: Option<bool>,
+    pub is_carousel: Option<bool>,
+}
+
+pub struct EventParams {
+    pub id: Option<String>,
+    pub limit: Option<u64>,
+    pub offset: Option<u64>,
+    pub tag_id: Option<u64>,
+    pub order: Option<String>,
+    pub ascending: Option<bool>,
 }
 
 /// Event from the /events endpoint
@@ -298,4 +330,3 @@ pub struct BuilderTradesResponse {
     pub data: Vec<BuilderTrade>,
     pub next_cursor: String,
 }
-

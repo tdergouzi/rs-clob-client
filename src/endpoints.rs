@@ -15,6 +15,10 @@ pub mod endpoints {
     pub const GET_BUILDER_API_KEYS: &str = "/auth/builder-api-key";
     pub const REVOKE_BUILDER_API_KEY: &str = "/auth/builder-api-key";
 
+    // Tags
+    pub const GET_TAGS: &str = "/tags";
+    pub const GET_TAG_BY_SLUG: &str = "/tags/slug/";
+
     // Events
     pub const GET_EVENTS: &str = "/events";
     pub const GET_EVENT: &str = "/events/";

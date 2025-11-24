@@ -160,17 +160,58 @@ impl ClobClient {
         self.http_client.get(endpoints::TIME, None, None).await
     }
 
-    /// Gets all markets with pagination
+    /// Gets tags
+    pub async fn get_tags(&self, params: TagParams) -> ClobResult<Vec<Tag>> {
+        let endpoint = endpoints::GET_TAGS;
+        // let cursor = next_cursor.unwrap_or_else(|| INITIAL_CURSOR.to_string());
+
+        let mut query_params = HashMap::new();
+        if let Some(limit) = params.limit {
+            query_params.insert("limit".to_string(), limit.to_string());
+        }
+        if let Some(offset) = params.offset {
+            query_params.insert("offset".to_string(), offset.to_string());
+        }
+        if let Some(order) = params.order {
+            query_params.insert("order".to_string(), order);
+        }
+        if let Some(ascending) = params.ascending {
+            query_params.insert("ascending".to_string(), ascending.to_string());
+        }
+
+        self.gamma_api_client
+            .get(endpoint, None, Some(query_params))
+            .await
+    }
+
+    /// Gets tag by slug
+    pub async fn get_tag_by_slug(&self, slug: &str) -> ClobResult<Tag> {
+        if slug.is_empty() {
+            return Err(ClobError::Other("Slug is required".to_string()));
+        }
+
+        let endpoint = format!("{}{}", endpoints::GET_TAG_BY_SLUG, slug);
+        self.gamma_api_client.get(&endpoint, None, None).await
+    }
+
+    /// Gets the popular tags
+    pub async fn get_popular_tags(&self) -> ClobResult<Vec<Tag>> {
+        Ok(crate::constants::get_popular_tags())
+    }
+
+    /// Gets events
     pub async fn get_events(&self, limit: Option<u64>) -> ClobResult<Vec<Event>> {
         let endpoint = endpoints::GET_EVENTS;
         // let cursor = next_cursor.unwrap_or_else(|| INITIAL_CURSOR.to_string());
-        
+
         let mut params = HashMap::new();
         if let Some(limit) = limit {
             params.insert("limit".to_string(), limit.to_string());
         }
 
-        self.gamma_api_client.get(endpoint, None, Some(params)).await
+        self.gamma_api_client
+            .get(endpoint, None, Some(params))
+            .await
     }
 
     /// Gets all markets with pagination
