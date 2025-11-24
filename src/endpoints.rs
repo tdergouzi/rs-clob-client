@@ -21,7 +21,8 @@ pub mod endpoints {
 
     // Events
     pub const GET_EVENTS: &str = "/events";
-    pub const GET_EVENT: &str = "/events/";
+    pub const GET_EVENTS_BY_ID: &str = "/events/";
+    pub const GET_EVENT_BY_SLUG: &str = "/events/slug/";
 
     // Markets
     pub const GET_SAMPLING_SIMPLIFIED_MARKETS: &str = "/sampling-simplified-markets";

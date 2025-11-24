@@ -200,18 +200,44 @@ impl ClobClient {
     }
 
     /// Gets events
-    pub async fn get_events(&self, limit: Option<u64>) -> ClobResult<Vec<Event>> {
+    pub async fn get_events(&self, params: EventParams) -> ClobResult<Vec<Event>> {
         let endpoint = endpoints::GET_EVENTS;
         // let cursor = next_cursor.unwrap_or_else(|| INITIAL_CURSOR.to_string());
 
-        let mut params = HashMap::new();
-        if let Some(limit) = limit {
-            params.insert("limit".to_string(), limit.to_string());
+        let mut query_params = HashMap::new();
+        if let Some(limit) = params.limit {
+            query_params.insert("limit".to_string(), limit.to_string());
+        }
+        if let Some(offset) = params.offset {
+            query_params.insert("offset".to_string(), offset.to_string());
+        }
+        if let Some(tag_id) = params.tag_id {
+            query_params.insert("tag_id".to_string(), tag_id.to_string());
+        }
+        if let Some(closed) = params.closed {
+            query_params.insert("closed".to_string(), closed.to_string());
+        }
+        if let Some(order) = params.order {
+            query_params.insert("order".to_string(), order);
+        }
+        if let Some(ascending) = params.ascending {
+            query_params.insert("ascending".to_string(), ascending.to_string());
         }
 
         self.gamma_api_client
-            .get(endpoint, None, Some(params))
+            .get(endpoint, None, Some(query_params))
             .await
+    }
+
+    pub async fn get_events_by_id(&self, id: &str) -> ClobResult<Event> {
+        let endpoint = format!("{}{}", endpoints::GET_EVENTS_BY_ID, id);
+        self.gamma_api_client.get(&endpoint, None, None).await
+    }
+
+    pub async fn get_event_by_slug(&self, slug: &str) -> ClobResult<Event> {
+        let endpoint = format!("{}{}", endpoints::GET_EVENT_BY_SLUG, slug);
+
+        self.gamma_api_client.get(&endpoint, None, None).await
     }
 
     /// Gets all markets with pagination

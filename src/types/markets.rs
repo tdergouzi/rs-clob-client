@@ -168,10 +168,10 @@ pub struct Tag {
 }
 
 pub struct EventParams {
-    pub id: Option<String>,
     pub limit: Option<u64>,
     pub offset: Option<u64>,
     pub tag_id: Option<u64>,
+    pub closed: Option<bool>,
     pub order: Option<String>,
     pub ascending: Option<bool>,
 }
@@ -181,70 +181,121 @@ pub struct EventParams {
 #[serde(rename_all = "camelCase")]
 pub struct Event {
     pub id: String,
-    pub ticker: String,
-    pub slug: String,
-    pub title: String,
-    pub description: String,
-    #[serde(rename = "resolutionSource")]
-    pub resolution_source: String,
-    #[serde(rename = "startDate")]
-    pub start_date: String,
-    #[serde(rename = "creationDate")]
-    pub creation_date: String,
-    #[serde(rename = "endDate")]
-    pub end_date: String,
-    pub image: String,
-    pub icon: String,
-    pub active: bool,
-    pub closed: bool,
-    pub archived: bool,
-    pub new: bool,
-    pub featured: bool,
-    pub restricted: bool,
-    pub liquidity: f64,
-    pub volume: f64,
-    #[serde(rename = "openInterest")]
-    pub open_interest: f64,
-    #[serde(rename = "sortBy")]
-    pub sort_by: String,
-    pub category: String,
-    #[serde(rename = "published_at")]
-    pub published_at: String,
-    #[serde(rename = "createdAt")]
-    pub created_at: String,
-    #[serde(rename = "updatedAt")]
-    pub updated_at: String,
-    pub competitive: i32,
-    pub volume24hr: f64,
-    pub volume1wk: f64,
-    pub volume1mo: f64,
-    pub volume1yr: f64,
-    #[serde(rename = "liquidityAmm")]
-    pub liquidity_amm: f64,
-    #[serde(rename = "liquidityClob")]
-    pub liquidity_clob: f64,
-    #[serde(rename = "commentCount")]
-    pub comment_count: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ticker: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub slug: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subtitle: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(rename = "resolutionSource", skip_serializing_if = "Option::is_none")]
+    pub resolution_source: Option<String>,
+    #[serde(rename = "startDate", skip_serializing_if = "Option::is_none")]
+    pub start_date: Option<String>,
+    #[serde(rename = "creationDate", skip_serializing_if = "Option::is_none")]
+    pub creation_date: Option<String>,
+    #[serde(rename = "endDate", skip_serializing_if = "Option::is_none")]
+    pub end_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub closed: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub archived: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub new: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub featured: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub restricted: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub liquidity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume: Option<f64>,
+    #[serde(rename = "openInterest", skip_serializing_if = "Option::is_none")]
+    pub open_interest: Option<f64>,
+    #[serde(rename = "sortBy", skip_serializing_if = "Option::is_none")]
+    pub sort_by: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subcategory: Option<String>,
+    #[serde(rename = "published_at", skip_serializing_if = "Option::is_none")]
+    pub published_at: Option<String>,
+    #[serde(rename = "createdBy", skip_serializing_if = "Option::is_none")]
+    pub created_by: Option<String>,
+    #[serde(rename = "updatedBy", skip_serializing_if = "Option::is_none")]
+    pub updated_by: Option<String>,
+    #[serde(rename = "createdAt", skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<String>,
+    #[serde(rename = "updatedAt", skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<String>,
+    #[serde(rename = "commentsEnabled", skip_serializing_if = "Option::is_none")]
+    pub comments_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub competitive: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume24hr: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume1wk: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume1mo: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume1yr: Option<f64>,
+    #[serde(rename = "featuredImage", skip_serializing_if = "Option::is_none")]
+    pub featured_image: Option<String>,
+    #[serde(rename = "liquidityAmm", skip_serializing_if = "Option::is_none")]
+    pub liquidity_amm: Option<f64>,
+    #[serde(rename = "liquidityClob", skip_serializing_if = "Option::is_none")]
+    pub liquidity_clob: Option<f64>,
+    #[serde(rename = "enableOrderBook", skip_serializing_if = "Option::is_none")]
+    pub enable_order_book: Option<bool>,
+    #[serde(rename = "negRisk", skip_serializing_if = "Option::is_none")]
+    pub neg_risk: Option<bool>,
+    #[serde(rename = "negRiskMarketID", skip_serializing_if = "Option::is_none")]
+    pub neg_risk_market_id: Option<String>,
+    #[serde(rename = "commentCount", skip_serializing_if = "Option::is_none")]
+    pub comment_count: Option<i64>,
     // Nested objects - using serde_json::Value for flexibility
-    pub markets: Vec<serde_json::Value>,
-    pub series: Vec<serde_json::Value>,
-    pub tags: Vec<serde_json::Value>,
-    pub cyom: bool,
-    #[serde(rename = "closedTime")]
-    pub closed_time: String,
-    #[serde(rename = "showAllOutcomes")]
-    pub show_all_outcomes: bool,
-    #[serde(rename = "showMarketImages")]
-    pub show_market_images: bool,
-    #[serde(rename = "enableNegRisk")]
-    pub enable_neg_risk: bool,
-    #[serde(rename = "seriesSlug")]
-    pub series_slug: String,
-    #[serde(rename = "negRiskAugmented")]
-    pub neg_risk_augmented: bool,
-    #[serde(rename = "pendingDeployment")]
-    pub pending_deployment: bool,
-    pub deploying: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub markets: Option<Vec<serde_json::Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub series: Option<Vec<serde_json::Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<serde_json::Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cyom: Option<bool>,
+    #[serde(rename = "closedTime", skip_serializing_if = "Option::is_none")]
+    pub closed_time: Option<String>,
+    #[serde(rename = "showAllOutcomes", skip_serializing_if = "Option::is_none")]
+    pub show_all_outcomes: Option<bool>,
+    #[serde(rename = "showMarketImages", skip_serializing_if = "Option::is_none")]
+    pub show_market_images: Option<bool>,
+    #[serde(rename = "automaticallyResolved", skip_serializing_if = "Option::is_none")]
+    pub automatically_resolved: Option<bool>,
+    #[serde(rename = "enableNegRisk", skip_serializing_if = "Option::is_none")]
+    pub enable_neg_risk: Option<bool>,
+    #[serde(rename = "automaticallyActive", skip_serializing_if = "Option::is_none")]
+    pub automatically_active: Option<bool>,
+    #[serde(rename = "seriesSlug", skip_serializing_if = "Option::is_none")]
+    pub series_slug: Option<String>,
+    #[serde(rename = "negRiskAugmented", skip_serializing_if = "Option::is_none")]
+    pub neg_risk_augmented: Option<bool>,
+    #[serde(rename = "pendingDeployment", skip_serializing_if = "Option::is_none")]
+    pub pending_deployment: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deploying: Option<bool>,
+    #[serde(rename = "deployingTimestamp", skip_serializing_if = "Option::is_none")]
+    pub deploying_timestamp: Option<String>,
+    #[serde(rename = "isTemplate", skip_serializing_if = "Option::is_none")]
+    pub is_template: Option<bool>,
 }
 
 /// Market trade event
