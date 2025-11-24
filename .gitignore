@@ -29,6 +29,7 @@ target/
 *.profdata
 coverage/
 tarpaulin-report.html
+data
 
 # Flamegraph
 flamegraph.svg

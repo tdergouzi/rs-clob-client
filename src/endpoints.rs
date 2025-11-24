@@ -15,6 +15,10 @@ pub mod endpoints {
     pub const GET_BUILDER_API_KEYS: &str = "/auth/builder-api-key";
     pub const REVOKE_BUILDER_API_KEY: &str = "/auth/builder-api-key";
 
+    // Events
+    pub const GET_EVENTS: &str = "/events";
+    pub const GET_EVENT: &str = "/events/";
+
     // Markets
     pub const GET_SAMPLING_SIMPLIFIED_MARKETS: &str = "/sampling-simplified-markets";
     pub const GET_SAMPLING_MARKETS: &str = "/sampling-markets";

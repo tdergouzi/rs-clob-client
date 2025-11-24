@@ -1,57 +1,11 @@
-use alloy_signer_local::PrivateKeySigner;
-use rs_clob_client::{
-    client::ClobClient,
-    types::{ApiKeyCreds, Chain, CreateOrderOptions, OrderType, Side, TickSize, UserMarketOrder},
-};
-use std::env;
+mod common;
 
-/// Helper function to create an authenticated test client
-fn create_test_client() -> ClobClient {
-    // Load environment variables from .env file
-    dotenvy::dotenv().ok();
-
-    // Parse private key from environment
-    let pk = env::var("PK").expect("PK must be set");
-    let wallet: PrivateKeySigner = pk.parse().expect("Invalid private key");
-
-    // Parse chain ID
-    let chain_id_str: String = env::var("CHAIN_ID").unwrap_or_else(|_| "80002".to_string());
-    let chain_id: Chain = match chain_id_str.parse::<u64>().unwrap() {
-        137 => Chain::Polygon,
-        80002 => Chain::Amoy,
-        _ => Chain::Amoy,
-    };
-
-    let address = wallet.address();
-    println!("Address: {}, chainId: {}", address, chain_id_str);
-
-    // Get API host
-    let host = env::var("CLOB_API_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
-
-    // Create API key credentials
-    let creds = ApiKeyCreds {
-        key: env::var("CLOB_API_KEY").expect("CLOB_API_KEY must be set"),
-        secret: env::var("CLOB_SECRET").expect("CLOB_SECRET must be set"),
-        passphrase: env::var("CLOB_PASS_PHRASE").expect("CLOB_PASS_PHRASE must be set"),
-    };
-
-    // Create CLOB client
-    ClobClient::new(
-        host,
-        chain_id,
-        Some(wallet),
-        Some(creds),
-        None,     // signature_type
-        None,     // funder_address
-        None,     // geo_block_token
-        false,    // use_server_time
-        None,     // builder_config
-    )
-}
+use rs_clob_client::types::{CreateOrderOptions, OrderType, Side, TickSize, UserMarketOrder};
+use common::create_authenticated_test_client;
 
 #[tokio::test]
 async fn test_create_market_buy_order() {
-    let client = create_test_client();
+    let client = create_authenticated_test_client();
 
     // YES token ID
     let yes_token = "71321045679252212594626385532706912750332728571942532289631379312455583992563";
@@ -92,7 +46,7 @@ async fn test_create_market_buy_order() {
 
 #[tokio::test]
 async fn test_create_and_post_market_buy_order() {
-    let client = create_test_client();
+    let client = create_authenticated_test_client();
 
     // YES token ID
     let yes_token = "71321045679252212594626385532706912750332728571942532289631379312455583992563";

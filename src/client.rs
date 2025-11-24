@@ -23,6 +23,9 @@ pub struct ClobClient {
     /// HTTP client for making requests
     http_client: HttpClient,
 
+    /// HTTP client for making requests to the Gamma API
+    gamma_api_client: HttpClient,
+
     /// Wallet for L1 authentication (optional)
     wallet: Option<PrivateKeySigner>,
 
@@ -67,6 +70,7 @@ impl ClobClient {
     /// * `builder_config` - Optional builder configuration for builder API authentication
     pub fn new(
         host: String,
+        gamma_host: String,
         chain_id: Chain,
         wallet: Option<PrivateKeySigner>,
         creds: Option<ApiKeyCreds>,
@@ -81,6 +85,14 @@ impl ClobClient {
         } else {
             host
         };
+
+        let gamma_host = if gamma_host.ends_with('/') {
+            gamma_host[..gamma_host.len() - 1].to_string()
+        } else {
+            gamma_host
+        };
+
+        let gamma_api_client = HttpClient::new(gamma_host);
 
         // Default signature type to EOA (0) if not provided
         let sig_type = signature_type.unwrap_or(0);
@@ -119,6 +131,7 @@ impl ClobClient {
 
         Self {
             http_client,
+            gamma_api_client,
             host,
             chain_id,
             wallet,
@@ -145,6 +158,36 @@ impl ClobClient {
     /// Gets server time
     pub async fn get_server_time(&self) -> ClobResult<u64> {
         self.http_client.get(endpoints::TIME, None, None).await
+    }
+
+    /// Gets all markets with pagination
+    pub async fn get_events(&self, limit: Option<u64>) -> ClobResult<Vec<Event>> {
+        let endpoint = endpoints::GET_EVENTS;
+        // let cursor = next_cursor.unwrap_or_else(|| INITIAL_CURSOR.to_string());
+        
+        let mut params = HashMap::new();
+        if let Some(limit) = limit {
+            params.insert("limit".to_string(), limit.to_string());
+        }
+
+        self.gamma_api_client.get(endpoint, None, Some(params)).await
+    }
+
+    /// Gets all markets with pagination
+    pub async fn get_markets(&self, next_cursor: Option<String>) -> ClobResult<PaginationPayload> {
+        let cursor = next_cursor.unwrap_or_else(|| INITIAL_CURSOR.to_string());
+        let endpoint = endpoints::GET_MARKETS;
+
+        let mut params = HashMap::new();
+        params.insert("next_cursor".to_string(), cursor);
+
+        self.http_client.get(endpoint, None, Some(params)).await
+    }
+
+    /// Gets a specific market by condition ID
+    pub async fn get_market(&self, condition_id: &str) -> ClobResult<serde_json::Value> {
+        let endpoint = format!("{}{}", endpoints::GET_MARKET, condition_id);
+        self.http_client.get(&endpoint, None, None).await
     }
 
     /// Gets sampling markets with pagination
@@ -194,23 +237,6 @@ impl ClobClient {
                 Some(params),
             )
             .await
-    }
-
-    /// Gets all markets with pagination
-    pub async fn get_markets(&self, next_cursor: Option<String>) -> ClobResult<PaginationPayload> {
-        let cursor = next_cursor.unwrap_or_else(|| INITIAL_CURSOR.to_string());
-        let endpoint = endpoints::GET_MARKETS;
-
-        let mut params = HashMap::new();
-        params.insert("next_cursor".to_string(), cursor);
-
-        self.http_client.get(endpoint, None, Some(params)).await
-    }
-
-    /// Gets a specific market by condition ID
-    pub async fn get_market(&self, condition_id: &str) -> ClobResult<serde_json::Value> {
-        let endpoint = format!("{}{}", endpoints::GET_MARKET, condition_id);
-        self.http_client.get(&endpoint, None, None).await
     }
 
     /// Gets orderbook for a token
