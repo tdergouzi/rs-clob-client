@@ -331,6 +331,13 @@ pub struct Market {
     pub cyom: Option<bool>,
 }
 
+/// Book parameters for batch requests
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderBookParams {
+    pub token_id: String,
+    pub side: Option<Side>,
+}
+
 /// Orderbook summary
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OrderBookSummary {
@@ -345,11 +352,45 @@ pub struct OrderBookSummary {
     pub hash: String,
 }
 
-/// Book parameters for batch requests
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BookParams {
+pub struct PriceParams {
     pub token_id: String,
     pub side: Side,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Price {
+    pub price: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Midpoint {
+    pub mid: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PriceHistoryParams {
+    pub market: String,
+    pub fidelity: u32,
+    #[serde(rename = "startTs", skip_serializing_if = "Option::is_none")]
+    pub start_ts: Option<u64>,
+    #[serde(rename = "endTs", skip_serializing_if = "Option::is_none")]
+    pub end_ts: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interval: Option<PriceHistoryInterval>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HistoryPriceItem {
+    /// Timestamp
+    pub t: u64,
+    /// Price
+    pub p: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HistoryPrice {
+    pub history: Vec<HistoryPriceItem>,
 }
 
 // ============================================================================
@@ -407,31 +448,6 @@ pub struct TradeParams {
 pub struct TradesPaginatedResponse {
     pub data: Vec<Trade>,
     pub next_cursor: String,
-}
-
-
-/// Market price point
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MarketPrice {
-    /// Timestamp
-    pub t: u64,
-    /// Price
-    pub p: f64,
-}
-
-/// Price history filter parameters
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct PriceHistoryFilterParams {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub market: Option<String>,
-    #[serde(rename = "startTs", skip_serializing_if = "Option::is_none")]
-    pub start_ts: Option<u64>,
-    #[serde(rename = "endTs", skip_serializing_if = "Option::is_none")]
-    pub end_ts: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fidelity: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub interval: Option<PriceHistoryInterval>,
 }
 
 // ============================================================================

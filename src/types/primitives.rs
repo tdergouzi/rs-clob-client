@@ -116,6 +116,21 @@ pub enum PriceHistoryInterval {
     SixHours,
     #[serde(rename = "1h")]
     OneHour,
+    #[serde(rename = "1m")]
+    OneMinute,
+}
+
+impl PriceHistoryInterval {
+    pub fn to_string(&self) -> String {
+        match self {
+            PriceHistoryInterval::Max => "max".to_string(),
+            PriceHistoryInterval::OneWeek => "1w".to_string(),
+            PriceHistoryInterval::OneDay => "1d".to_string(),
+            PriceHistoryInterval::SixHours => "6h".to_string(),
+            PriceHistoryInterval::OneHour => "1h".to_string(),
+            PriceHistoryInterval::OneMinute => "1m".to_string(),
+        }
+    }
 }
 
 // ============================================================================

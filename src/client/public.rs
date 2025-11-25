@@ -113,14 +113,16 @@ impl ClobClient {
         if let Some(ascending) = params.ascending {
             query_params.insert("ascending".to_string(), ascending.to_string());
         }
-        if let Some(condition_id) = params.condition_id {  
+        if let Some(condition_id) = params.condition_id {
             query_params.insert("condition_id".to_string(), condition_id.to_string());
         }
         if let Some(closed) = params.closed {
             query_params.insert("closed".to_string(), closed.to_string());
         }
 
-        self.gamma_api_client.get(endpoint, None, Some(query_params)).await
+        self.gamma_api_client
+            .get(endpoint, None, Some(query_params))
+            .await
     }
 
     pub async fn get_market_by_id(&self, id: &str) -> ClobResult<Market> {
@@ -145,14 +147,176 @@ impl ClobClient {
 
     pub async fn get_order_books(
         &self,
-        params: Vec<BookParams>,
+        params: Vec<OrderBookParams>,
     ) -> ClobResult<Vec<OrderBookSummary>> {
         self.http_client
             .post(endpoints::GET_ORDER_BOOKS, None, Some(params), None)
             .await
     }
 
-    /// Gets tick size for a token (with caching)
+    pub fn get_order_book_hash(&self, orderbook: &mut OrderBookSummary) -> String {
+        crate::utilities::generate_orderbook_summary_hash(orderbook)
+    }
+
+    /// Prices
+    pub async fn get_price(&self, params: PriceParams) -> ClobResult<Price> {
+        let mut query_params = HashMap::new();
+        query_params.insert("token_id".to_string(), params.token_id.to_string());
+        query_params.insert("side".to_string(), params.side.to_uppercase());
+
+        self.http_client
+            .get(endpoints::GET_PRICE, None, Some(query_params))
+            .await
+    }
+
+    pub async fn get_prices(&self, params: Vec<PriceParams>) -> ClobResult<Vec<Price>> {
+        self.http_client
+            .post(endpoints::GET_PRICES, None, Some(params), None)
+            .await
+    }
+
+    pub async fn get_midpoint(&self, token_id: &str) -> ClobResult<Midpoint> {
+        let mut params = HashMap::new();
+        params.insert("token_id".to_string(), token_id.to_string());
+
+        self.http_client
+            .get(endpoints::GET_MIDPOINT, None, Some(params))
+            .await
+    }
+
+    pub async fn get_midpoints(
+        &self,
+        params: Vec<OrderBookParams>,
+    ) -> ClobResult<serde_json::Value> {
+        self.http_client
+            .post(endpoints::GET_MIDPOINTS, None, Some(params), None)
+            .await
+    }
+
+    pub async fn get_prices_history(&self, params: PriceHistoryParams) -> ClobResult<HistoryPrice> {
+        // Validate: either (start_ts AND end_ts) OR interval must be provided
+        let has_time_range = params.start_ts.is_some() && params.end_ts.is_some();
+        let has_interval = params.interval.is_some();
+
+        if !has_time_range && !has_interval {
+            return Err(ClobError::Other(
+                "Either (start_ts and end_ts) or interval must be provided".to_string(),
+            ));
+        }
+
+        let mut query_params = HashMap::new();
+
+        query_params.insert("market".to_string(), params.market);
+        query_params.insert("fidelity".to_string(), params.fidelity.to_string());
+        if let Some(start_ts) = params.start_ts {
+            query_params.insert("startTs".to_string(), start_ts.to_string());
+        }
+        if let Some(end_ts) = params.end_ts {
+            query_params.insert("endTs".to_string(), end_ts.to_string());
+        }
+        if let Some(interval) = params.interval {
+            query_params.insert("interval".to_string(), interval.to_string());
+        }
+
+        self.http_client
+            .get(endpoints::GET_PRICES_HISTORY, None, Some(query_params))
+            .await
+    }
+
+    /// Spreads
+    pub async fn get_spreads(&self, params: Vec<OrderBookParams>) -> ClobResult<serde_json::Value> {
+        self.http_client
+            .post(endpoints::GET_SPREADS, None, Some(params), None)
+            .await
+    }
+
+    /// No Rest API Implementations for the following endpoints:
+    pub async fn get_last_trade_price(&self, token_id: &str) -> ClobResult<serde_json::Value> {
+        let mut params = HashMap::new();
+        params.insert("token_id".to_string(), token_id.to_string());
+
+        self.http_client
+            .get(endpoints::GET_LAST_TRADE_PRICE, None, Some(params))
+            .await
+    }
+
+    pub async fn get_last_trades_prices(
+        &self,
+        params: Vec<OrderBookParams>,
+    ) -> ClobResult<serde_json::Value> {
+        self.http_client
+            .post(endpoints::GET_LAST_TRADES_PRICES, None, Some(params), None)
+            .await
+    }
+
+    pub async fn get_market_trades_events(
+        &self,
+        condition_id: &str,
+    ) -> ClobResult<Vec<MarketTradeEvent>> {
+        let endpoint = format!(
+            "{}{}{}",
+            self.host,
+            endpoints::GET_MARKET_TRADES_EVENTS,
+            condition_id
+        );
+        self.http_client.get(&endpoint, None, None).await
+    }
+
+    pub async fn get_current_rewards(&self) -> ClobResult<Vec<MarketReward>> {
+        let mut results = Vec::new();
+        let mut next_cursor = INITIAL_CURSOR.to_string();
+
+        while next_cursor != END_CURSOR {
+            let mut params = HashMap::new();
+            params.insert("next_cursor".to_string(), next_cursor.clone());
+
+            #[derive(Deserialize)]
+            struct RewardsResponse {
+                data: Vec<MarketReward>,
+                next_cursor: String,
+            }
+
+            let response: RewardsResponse = self
+                .http_client
+                .get(endpoints::GET_REWARDS_MARKETS_CURRENT, None, Some(params))
+                .await?;
+
+            next_cursor = response.next_cursor;
+            results.extend(response.data);
+        }
+
+        Ok(results)
+    }
+
+    pub async fn get_raw_rewards_for_market(
+        &self,
+        condition_id: &str,
+    ) -> ClobResult<Vec<MarketReward>> {
+        let endpoint = format!("{}{}", endpoints::GET_REWARDS_MARKETS, condition_id);
+
+        let mut results = Vec::new();
+        let mut next_cursor = INITIAL_CURSOR.to_string();
+
+        while next_cursor != END_CURSOR {
+            let mut params = HashMap::new();
+            params.insert("next_cursor".to_string(), next_cursor.clone());
+
+            #[derive(Deserialize)]
+            struct RewardsResponse {
+                data: Vec<MarketReward>,
+                next_cursor: String,
+            }
+
+            let response: RewardsResponse =
+                self.http_client.get(&endpoint, None, Some(params)).await?;
+
+            next_cursor = response.next_cursor;
+            results.extend(response.data);
+        }
+
+        Ok(results)
+    }
+
     pub async fn get_tick_size(&self, token_id: &str) -> ClobResult<TickSize> {
         // Check cache first
         if let Some(tick_size) = self.tick_sizes.borrow().get(token_id) {
@@ -185,7 +349,6 @@ impl ClobClient {
         Ok(tick_size)
     }
 
-    /// Gets negative risk flag for a token (with caching)
     pub async fn get_neg_risk(&self, token_id: &str) -> ClobResult<bool> {
         // Check cache first
         if let Some(&neg_risk) = self.neg_risk.borrow().get(token_id) {
@@ -214,7 +377,6 @@ impl ClobClient {
         Ok(response.neg_risk)
     }
 
-    /// Gets fee rate in basis points for a token (with caching)
     pub async fn get_fee_rate_bps(&self, token_id: &str) -> ClobResult<u32> {
         // Check cache first
         if let Some(&fee_rate) = self.fee_rates.borrow().get(token_id) {
@@ -243,179 +405,4 @@ impl ClobClient {
 
         Ok(response.maker_base_fee_rate_bps)
     }
-
-    /// Calculates the hash for the given orderbook
-    /// This modifies the orderbook by setting its hash field
-    pub fn get_order_book_hash(&self, orderbook: &mut OrderBookSummary) -> String {
-        crate::utilities::generate_orderbook_summary_hash(orderbook)
-    }
-
-    /// Gets midpoint price for a token
-    pub async fn get_midpoint(&self, token_id: &str) -> ClobResult<serde_json::Value> {
-        let mut params = HashMap::new();
-        params.insert("token_id".to_string(), token_id.to_string());
-
-        self.http_client
-            .get(endpoints::GET_MIDPOINT, None, Some(params))
-            .await
-    }
-
-    /// Gets multiple midpoints
-    pub async fn get_midpoints(&self, params: Vec<BookParams>) -> ClobResult<serde_json::Value> {
-        self.http_client
-            .post(endpoints::GET_MIDPOINTS, None, Some(params), None)
-            .await
-    }
-
-    /// Gets price for a token and side
-    pub async fn get_price(&self, token_id: &str, side: Side) -> ClobResult<serde_json::Value> {
-        let mut params = HashMap::new();
-        params.insert("token_id".to_string(), token_id.to_string());
-        params.insert("side".to_string(), side.to_uppercase());
-
-        self.http_client
-            .get(endpoints::GET_PRICE, None, Some(params))
-            .await
-    }
-
-    /// Gets multiple prices
-    pub async fn get_prices(&self, params: Vec<BookParams>) -> ClobResult<serde_json::Value> {
-        self.http_client
-            .post(endpoints::GET_PRICES, None, Some(params), None)
-            .await
-    }
-
-    /// Gets spread for a token
-    pub async fn get_spread(&self, token_id: &str) -> ClobResult<serde_json::Value> {
-        let mut params = HashMap::new();
-        params.insert("token_id".to_string(), token_id.to_string());
-
-        self.http_client
-            .get(endpoints::GET_SPREAD, None, Some(params))
-            .await
-    }
-
-    /// Gets multiple spreads
-    pub async fn get_spreads(&self, params: Vec<BookParams>) -> ClobResult<serde_json::Value> {
-        self.http_client
-            .post(endpoints::GET_SPREADS, None, Some(params), None)
-            .await
-    }
-
-    /// Gets last trade price for a token
-    pub async fn get_last_trade_price(&self, token_id: &str) -> ClobResult<serde_json::Value> {
-        let mut params = HashMap::new();
-        params.insert("token_id".to_string(), token_id.to_string());
-
-        self.http_client
-            .get(endpoints::GET_LAST_TRADE_PRICE, None, Some(params))
-            .await
-    }
-
-    /// Gets last trade prices for multiple tokens
-    pub async fn get_last_trades_prices(
-        &self,
-        params: Vec<BookParams>,
-    ) -> ClobResult<serde_json::Value> {
-        self.http_client
-            .post(endpoints::GET_LAST_TRADES_PRICES, None, Some(params), None)
-            .await
-    }
-
-    /// Gets historical prices
-    pub async fn get_prices_history(
-        &self,
-        params: PriceHistoryFilterParams,
-    ) -> ClobResult<Vec<MarketPrice>> {
-        let mut query_params = HashMap::new();
-
-        if let Some(market) = params.market {
-            query_params.insert("market".to_string(), market);
-        }
-        if let Some(start) = params.start_ts {
-            query_params.insert("startTs".to_string(), start.to_string());
-        }
-        if let Some(end) = params.end_ts {
-            query_params.insert("endTs".to_string(), end.to_string());
-        }
-        if let Some(fidelity) = params.fidelity {
-            query_params.insert("fidelity".to_string(), fidelity.to_string());
-        }
-
-        self.http_client
-            .get(endpoints::GET_PRICES_HISTORY, None, Some(query_params))
-            .await
-    }
-
-    /// Gets public market trade events
-    pub async fn get_market_trades_events(
-        &self,
-        condition_id: &str,
-    ) -> ClobResult<Vec<MarketTradeEvent>> {
-        let endpoint = format!(
-            "{}{}{}",
-            self.host,
-            endpoints::GET_MARKET_TRADES_EVENTS,
-            condition_id
-        );
-        self.http_client.get(&endpoint, None, None).await
-    }
-
-    /// Gets current reward programs (with automatic pagination)
-    pub async fn get_current_rewards(&self) -> ClobResult<Vec<MarketReward>> {
-        let mut results = Vec::new();
-        let mut next_cursor = INITIAL_CURSOR.to_string();
-
-        while next_cursor != END_CURSOR {
-            let mut params = HashMap::new();
-            params.insert("next_cursor".to_string(), next_cursor.clone());
-
-            #[derive(Deserialize)]
-            struct RewardsResponse {
-                data: Vec<MarketReward>,
-                next_cursor: String,
-            }
-
-            let response: RewardsResponse = self
-                .http_client
-                .get(endpoints::GET_REWARDS_MARKETS_CURRENT, None, Some(params))
-                .await?;
-
-            next_cursor = response.next_cursor;
-            results.extend(response.data);
-        }
-
-        Ok(results)
-    }
-
-    /// Gets raw rewards for a specific market (with automatic pagination)
-    pub async fn get_raw_rewards_for_market(
-        &self,
-        condition_id: &str,
-    ) -> ClobResult<Vec<MarketReward>> {
-        let endpoint = format!("{}{}", endpoints::GET_REWARDS_MARKETS, condition_id);
-
-        let mut results = Vec::new();
-        let mut next_cursor = INITIAL_CURSOR.to_string();
-
-        while next_cursor != END_CURSOR {
-            let mut params = HashMap::new();
-            params.insert("next_cursor".to_string(), next_cursor.clone());
-
-            #[derive(Deserialize)]
-            struct RewardsResponse {
-                data: Vec<MarketReward>,
-                next_cursor: String,
-            }
-
-            let response: RewardsResponse =
-                self.http_client.get(&endpoint, None, Some(params)).await?;
-
-            next_cursor = response.next_cursor;
-            results.extend(response.data);
-        }
-
-        Ok(results)
-    }
 }
-

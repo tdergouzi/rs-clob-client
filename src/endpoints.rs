@@ -32,18 +32,17 @@ pub mod endpoints {
     // Orderbook
     pub const GET_ORDER_BOOK: &str = "/book";
     pub const GET_ORDER_BOOKS: &str = "/books";
-    
-    pub const GET_MIDPOINT: &str = "/midpoint";
-    pub const GET_MIDPOINTS: &str = "/midpoints";
+
+    // Prices
     pub const GET_PRICE: &str = "/price";
     pub const GET_PRICES: &str = "/prices";
+    pub const GET_MIDPOINT: &str = "/midpoint";
+    pub const GET_MIDPOINTS: &str = "/midpoints";
+    pub const GET_PRICES_HISTORY: &str = "/prices-history";
+
+    // Spreads
     pub const GET_SPREAD: &str = "/spread";
     pub const GET_SPREADS: &str = "/spreads";
-    pub const GET_LAST_TRADE_PRICE: &str = "/last-trade-price";
-    pub const GET_LAST_TRADES_PRICES: &str = "/last-trades-prices";
-    pub const GET_TICK_SIZE: &str = "/tick-size";
-    pub const GET_NEG_RISK: &str = "/neg-risk";
-    pub const GET_FEE_RATE: &str = "/fee-rate";
 
     // Order endpoints
     pub const POST_ORDER: &str = "/order";
@@ -57,9 +56,6 @@ pub mod endpoints {
     pub const GET_TRADES: &str = "/data/trades";
     pub const IS_ORDER_SCORING: &str = "/order-scoring";
     pub const ARE_ORDERS_SCORING: &str = "/orders-scoring";
-
-    // Price history
-    pub const GET_PRICES_HISTORY: &str = "/prices-history";
 
     // Notifications
     pub const GET_NOTIFICATIONS: &str = "/notifications";
@@ -82,4 +78,10 @@ pub mod endpoints {
 
     // Builder endpoints
     pub const GET_BUILDER_TRADES: &str = "/builder/trades";
+
+    pub const GET_LAST_TRADE_PRICE: &str = "/last-trade-price";
+    pub const GET_LAST_TRADES_PRICES: &str = "/last-trades-prices";
+    pub const GET_TICK_SIZE: &str = "/tick-size";
+    pub const GET_NEG_RISK: &str = "/neg-risk";
+    pub const GET_FEE_RATE: &str = "/fee-rate";
 }

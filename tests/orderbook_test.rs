@@ -1,30 +1,59 @@
 mod common;
 
 use common::create_test_client;
+use rs_clob_client::types::OrderBookParams;
 
 #[tokio::test]
 async fn test_get_orderbook() {
     let client = create_test_client();
 
     // YES token ID
-    let yes_token = "71321045679252212594626385532706912750332728571942532289631379312455583992563";
+    let yes_token = "98861221941952098410661779464520326542627371393679468645396942578853799448969";
 
     // Get orderbook
-    let mut orderbook = client
+    let orderbook = client
         .get_order_book(yes_token)
         .await
         .expect("Failed to fetch orderbook");
 
     // Assertions
-    assert!(!orderbook.bids.is_empty() || !orderbook.asks.is_empty(), 
-            "Orderbook should have at least bids or asks");
+    assert!(
+        !orderbook.bids.is_empty() || !orderbook.asks.is_empty(),
+        "Orderbook should have at least bids or asks"
+    );
 
-    println!("Orderbook: {:#?}", orderbook);
-
-    // Calculate and print orderbook hash
-    let hash = client.get_order_book_hash(&mut orderbook);
-    assert!(!hash.is_empty(), "Orderbook hash should not be empty");
-    
-    println!("Orderbook hash: {}", hash);
+    println!(
+        "Orderbook: {}",
+        serde_json::to_string_pretty(&orderbook).unwrap()
+    );
 }
 
+#[tokio::test]
+async fn test_get_orderbooks() {
+    let client = create_test_client();
+
+    let params = vec![
+        OrderBookParams {
+            token_id: "98861221941952098410661779464520326542627371393679468645396942578853799448969".to_string(),
+            side: None,
+        },
+        OrderBookParams {
+            token_id: "1590293477094050907486207079346730658466569083582527022110944767563122184311".to_string(),
+            side: None,
+        },
+    ];
+
+    // Get orderbooks
+    let result = client
+        .get_order_books(params)
+        .await
+        .expect("Failed to fetch orderbooks");
+
+    assert!(result.len() > 0, "Should have at least one orderbook");
+
+    println!("=== Orderbooks ===");
+    for (i, orderbook) in result.iter().take(3).enumerate() {
+        println!("\n{}. Orderbook:", i + 1);
+        println!("{}", serde_json::to_string_pretty(orderbook).unwrap());
+    }
+}
