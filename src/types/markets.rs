@@ -4,138 +4,9 @@ use super::orders::MakerOrder;
 use super::primitives::{AssetType, PriceHistoryInterval, Side, TraderSide};
 
 // ============================================================================
-// Trading & Market Data
+// Market Data
 // ============================================================================
 
-/// Trade information
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Trade {
-    pub id: String,
-    pub taker_order_id: String,
-    pub market: String,
-    pub asset_id: String,
-    pub side: Side,
-    pub size: String,
-    pub fee_rate_bps: String,
-    pub price: String,
-    pub status: String,
-    pub match_time: String,
-    pub last_update: String,
-    pub outcome: String,
-    pub bucket_index: u32,
-    pub owner: String,
-    pub maker_address: String,
-    pub maker_orders: Vec<MakerOrder>,
-    pub transaction_hash: String,
-    pub trader_side: TraderSide,
-}
-
-/// Trade parameters for filtering
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct TradeParams {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub maker_address: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub market: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub asset_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub before: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub after: Option<String>,
-}
-
-/// Paginated trades response
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TradesPaginatedResponse {
-    pub data: Vec<Trade>,
-    pub next_cursor: String,
-}
-
-/// Order summary in orderbook
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OrderSummary {
-    pub price: String,
-    pub size: String,
-}
-
-/// Orderbook summary
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OrderBookSummary {
-    pub market: String,
-    pub asset_id: String,
-    pub timestamp: String,
-    pub bids: Vec<OrderSummary>,
-    pub asks: Vec<OrderSummary>,
-    pub min_order_size: String,
-    pub tick_size: String,
-    pub neg_risk: bool,
-    pub hash: String,
-}
-
-/// Book parameters for batch requests
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BookParams {
-    pub token_id: String,
-    pub side: Side,
-}
-
-/// Market price point
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MarketPrice {
-    /// Timestamp
-    pub t: u64,
-    /// Price
-    pub p: f64,
-}
-
-/// Price history filter parameters
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct PriceHistoryFilterParams {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub market: Option<String>,
-    #[serde(rename = "startTs", skip_serializing_if = "Option::is_none")]
-    pub start_ts: Option<u64>,
-    #[serde(rename = "endTs", skip_serializing_if = "Option::is_none")]
-    pub end_ts: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fidelity: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub interval: Option<PriceHistoryInterval>,
-}
-
-// ============================================================================
-// Balance & Allowance
-// ============================================================================
-
-/// Balance allowance parameters
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BalanceAllowanceParams {
-    pub asset_type: AssetType,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub token_id: Option<String>,
-}
-
-/// Balance allowance response
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BalanceAllowanceResponse {
-    pub balance: String,
-    pub allowance: String,
-}
-
-/// Ban status response
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BanStatus {
-    pub closed_only: bool,
-}
-
-// ============================================================================
-// Pagination & Events
-// ============================================================================
-
-/// Pagination payload
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PaginationPayload {
     pub limit: u32,
@@ -278,11 +149,17 @@ pub struct Event {
     pub show_all_outcomes: Option<bool>,
     #[serde(rename = "showMarketImages", skip_serializing_if = "Option::is_none")]
     pub show_market_images: Option<bool>,
-    #[serde(rename = "automaticallyResolved", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "automaticallyResolved",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub automatically_resolved: Option<bool>,
     #[serde(rename = "enableNegRisk", skip_serializing_if = "Option::is_none")]
     pub enable_neg_risk: Option<bool>,
-    #[serde(rename = "automaticallyActive", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "automaticallyActive",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub automatically_active: Option<bool>,
     #[serde(rename = "seriesSlug", skip_serializing_if = "Option::is_none")]
     pub series_slug: Option<String>,
@@ -453,6 +330,138 @@ pub struct Market {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cyom: Option<bool>,
 }
+
+/// Orderbook summary
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderBookSummary {
+    pub market: String,
+    pub asset_id: String,
+    pub timestamp: String,
+    pub bids: Vec<OrderSummary>,
+    pub asks: Vec<OrderSummary>,
+    pub min_order_size: String,
+    pub tick_size: String,
+    pub neg_risk: bool,
+    pub hash: String,
+}
+
+/// Book parameters for batch requests
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BookParams {
+    pub token_id: String,
+    pub side: Side,
+}
+
+// ============================================================================
+// Trading Data
+// ============================================================================
+
+/// Order summary in orderbook
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderSummary {
+    pub price: String,
+    pub size: String,
+}
+/// Trade information
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Trade {
+    pub id: String,
+    pub taker_order_id: String,
+    pub market: String,
+    pub asset_id: String,
+    pub side: Side,
+    pub size: String,
+    pub fee_rate_bps: String,
+    pub price: String,
+    pub status: String,
+    pub match_time: String,
+    pub last_update: String,
+    pub outcome: String,
+    pub bucket_index: u32,
+    pub owner: String,
+    pub maker_address: String,
+    pub maker_orders: Vec<MakerOrder>,
+    pub transaction_hash: String,
+    pub trader_side: TraderSide,
+}
+
+/// Trade parameters for filtering
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct TradeParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maker_address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub market: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub asset_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub before: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub after: Option<String>,
+}
+
+/// Paginated trades response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TradesPaginatedResponse {
+    pub data: Vec<Trade>,
+    pub next_cursor: String,
+}
+
+
+/// Market price point
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MarketPrice {
+    /// Timestamp
+    pub t: u64,
+    /// Price
+    pub p: f64,
+}
+
+/// Price history filter parameters
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PriceHistoryFilterParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub market: Option<String>,
+    #[serde(rename = "startTs", skip_serializing_if = "Option::is_none")]
+    pub start_ts: Option<u64>,
+    #[serde(rename = "endTs", skip_serializing_if = "Option::is_none")]
+    pub end_ts: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fidelity: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interval: Option<PriceHistoryInterval>,
+}
+
+// ============================================================================
+// Balance & Allowance
+// ============================================================================
+
+/// Balance allowance parameters
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BalanceAllowanceParams {
+    pub asset_type: AssetType,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub token_id: Option<String>,
+}
+
+/// Balance allowance response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BalanceAllowanceResponse {
+    pub balance: String,
+    pub allowance: String,
+}
+
+/// Ban status response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BanStatus {
+    pub closed_only: bool,
+}
+
+// ============================================================================
+// Pagination & Events
+// ============================================================================
 
 /// Market trade event
 #[derive(Debug, Clone, Serialize, Deserialize)]

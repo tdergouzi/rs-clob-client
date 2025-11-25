@@ -97,7 +97,7 @@ impl ClobClient {
     }
 
     /// Markets
-    pub async fn get_markets(&self, params: MarketParams) -> ClobResult<PaginationPayload> {
+    pub async fn get_markets(&self, params: MarketParams) -> ClobResult<Vec<Market>> {
         let endpoint = endpoints::GET_MARKETS;
 
         let mut query_params = HashMap::new();
