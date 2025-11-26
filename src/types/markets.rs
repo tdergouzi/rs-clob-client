@@ -370,7 +370,7 @@ pub struct Midpoint {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PriceHistoryParams {
-    pub market: String,
+    pub token_id: String,
     pub fidelity: u32,
     #[serde(rename = "startTs", skip_serializing_if = "Option::is_none")]
     pub start_ts: Option<u64>,

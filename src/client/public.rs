@@ -169,7 +169,7 @@ impl ClobClient {
             .await
     }
 
-    pub async fn get_prices(&self, params: Vec<PriceParams>) -> ClobResult<Vec<Price>> {
+    pub async fn get_prices(&self, params: Vec<PriceParams>) -> ClobResult<serde_json::Value> {
         self.http_client
             .post(endpoints::GET_PRICES, None, Some(params), None)
             .await
@@ -206,7 +206,7 @@ impl ClobClient {
 
         let mut query_params = HashMap::new();
 
-        query_params.insert("market".to_string(), params.market);
+        query_params.insert("market".to_string(), params.token_id); // The market is the token_id
         query_params.insert("fidelity".to_string(), params.fidelity.to_string());
         if let Some(start_ts) = params.start_ts {
             query_params.insert("startTs".to_string(), start_ts.to_string());
