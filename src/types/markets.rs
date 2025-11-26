@@ -393,6 +393,17 @@ pub struct HistoryPrice {
     pub history: Vec<HistoryPriceItem>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpreadsParams {
+    pub token_id: String,
+    pub side: Option<Side>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LastTradePriceParams {
+    pub token_id: String,
+}
+
 // ============================================================================
 // Trading Data
 // ============================================================================

@@ -40,7 +40,7 @@ pub struct Token {
 /// Rewards config
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RewardsConfig {
-    pub date: String,
+    // pub date: String,
     pub asset_address: String,
     pub rewards_daily_rate: f64,
 }

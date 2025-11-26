@@ -1,5 +1,4 @@
 use crate::client::ClobClient;
-use crate::constants::{END_CURSOR, INITIAL_CURSOR};
 use crate::endpoints::endpoints;
 use crate::errors::{ClobError, ClobResult};
 use crate::types::*;
@@ -158,6 +157,101 @@ impl ClobClient {
         crate::utilities::generate_orderbook_summary_hash(orderbook)
     }
 
+    /// Token
+    pub async fn get_spreads(&self, params: Vec<SpreadsParams>) -> ClobResult<serde_json::Value> {
+        self.http_client
+            .post(endpoints::GET_SPREADS, None, Some(params), None)
+            .await
+    }
+
+    pub async fn get_tick_size(&self, token_id: &str) -> ClobResult<TickSize> {
+        // Check cache first
+        if let Some(tick_size) = self.tick_sizes.borrow().get(token_id) {
+            return Ok(*tick_size);
+        }
+
+        // Fetch from API
+        let mut params = HashMap::new();
+        params.insert("token_id".to_string(), token_id.to_string());
+
+        #[derive(Deserialize)]
+        struct TickSizeResponse {
+            minimum_tick_size: f64,
+        }
+
+        let response: TickSizeResponse = self
+            .http_client
+            .get(endpoints::GET_TICK_SIZE, None, Some(params))
+            .await?;
+        let tick_size_str = format!("{}", response.minimum_tick_size);
+        let tick_size = crate::utilities::parse_tick_size(&tick_size_str).ok_or_else(|| {
+            ClobError::Other(format!("Invalid tick size: {}", response.minimum_tick_size))
+        })?;
+
+        // Cache the result
+        self.tick_sizes
+            .borrow_mut()
+            .insert(token_id.to_string(), tick_size);
+
+        Ok(tick_size)
+    }
+
+    pub async fn get_neg_risk(&self, token_id: &str) -> ClobResult<bool> {
+        // Check cache first
+        if let Some(&neg_risk) = self.neg_risk.borrow().get(token_id) {
+            return Ok(neg_risk);
+        }
+
+        // Fetch from API
+        let mut params = HashMap::new();
+        params.insert("token_id".to_string(), token_id.to_string());
+
+        #[derive(Deserialize)]
+        struct NegRiskResponse {
+            neg_risk: bool,
+        }
+
+        let response: NegRiskResponse = self
+            .http_client
+            .get(endpoints::GET_NEG_RISK, None, Some(params))
+            .await?;
+
+        // Cache the result
+        self.neg_risk
+            .borrow_mut()
+            .insert(token_id.to_string(), response.neg_risk);
+
+        Ok(response.neg_risk)
+    }
+
+    pub async fn get_fee_rate_bps(&self, token_id: &str) -> ClobResult<u32> {
+        // Check cache first
+        // if let Some(&fee_rate) = self.fee_rates.borrow().get(token_id) {
+        //     return Ok(fee_rate);
+        // }
+
+        // Fetch from API
+        let mut params = HashMap::new();
+        params.insert("token_id".to_string(), token_id.to_string());
+
+        #[derive(Deserialize)]
+        struct FeeRateResponse {
+            base_fee: u32,
+        }
+
+        let response: FeeRateResponse = self
+            .http_client
+            .get(endpoints::GET_FEE_RATE, None, Some(params))
+            .await?;
+
+        // Cache the result
+        self.fee_rates
+            .borrow_mut()
+            .insert(token_id.to_string(), response.base_fee);
+
+        Ok(response.base_fee)
+    }
+
     /// Prices
     pub async fn get_price(&self, params: PriceParams) -> ClobResult<Price> {
         let mut query_params = HashMap::new();
@@ -223,14 +317,6 @@ impl ClobClient {
             .await
     }
 
-    /// Spreads
-    pub async fn get_spreads(&self, params: Vec<OrderBookParams>) -> ClobResult<serde_json::Value> {
-        self.http_client
-            .post(endpoints::GET_SPREADS, None, Some(params), None)
-            .await
-    }
-
-    /// No Rest API Implementations for the following endpoints:
     pub async fn get_last_trade_price(&self, token_id: &str) -> ClobResult<serde_json::Value> {
         let mut params = HashMap::new();
         params.insert("token_id".to_string(), token_id.to_string());
@@ -242,167 +328,10 @@ impl ClobClient {
 
     pub async fn get_last_trades_prices(
         &self,
-        params: Vec<OrderBookParams>,
+        params: Vec<LastTradePriceParams>,
     ) -> ClobResult<serde_json::Value> {
         self.http_client
             .post(endpoints::GET_LAST_TRADES_PRICES, None, Some(params), None)
             .await
-    }
-
-    pub async fn get_market_trades_events(
-        &self,
-        condition_id: &str,
-    ) -> ClobResult<Vec<MarketTradeEvent>> {
-        let endpoint = format!(
-            "{}{}{}",
-            self.host,
-            endpoints::GET_MARKET_TRADES_EVENTS,
-            condition_id
-        );
-        self.http_client.get(&endpoint, None, None).await
-    }
-
-    pub async fn get_current_rewards(&self) -> ClobResult<Vec<MarketReward>> {
-        let mut results = Vec::new();
-        let mut next_cursor = INITIAL_CURSOR.to_string();
-
-        while next_cursor != END_CURSOR {
-            let mut params = HashMap::new();
-            params.insert("next_cursor".to_string(), next_cursor.clone());
-
-            #[derive(Deserialize)]
-            struct RewardsResponse {
-                data: Vec<MarketReward>,
-                next_cursor: String,
-            }
-
-            let response: RewardsResponse = self
-                .http_client
-                .get(endpoints::GET_REWARDS_MARKETS_CURRENT, None, Some(params))
-                .await?;
-
-            next_cursor = response.next_cursor;
-            results.extend(response.data);
-        }
-
-        Ok(results)
-    }
-
-    pub async fn get_raw_rewards_for_market(
-        &self,
-        condition_id: &str,
-    ) -> ClobResult<Vec<MarketReward>> {
-        let endpoint = format!("{}{}", endpoints::GET_REWARDS_MARKETS, condition_id);
-
-        let mut results = Vec::new();
-        let mut next_cursor = INITIAL_CURSOR.to_string();
-
-        while next_cursor != END_CURSOR {
-            let mut params = HashMap::new();
-            params.insert("next_cursor".to_string(), next_cursor.clone());
-
-            #[derive(Deserialize)]
-            struct RewardsResponse {
-                data: Vec<MarketReward>,
-                next_cursor: String,
-            }
-
-            let response: RewardsResponse =
-                self.http_client.get(&endpoint, None, Some(params)).await?;
-
-            next_cursor = response.next_cursor;
-            results.extend(response.data);
-        }
-
-        Ok(results)
-    }
-
-    pub async fn get_tick_size(&self, token_id: &str) -> ClobResult<TickSize> {
-        // Check cache first
-        if let Some(tick_size) = self.tick_sizes.borrow().get(token_id) {
-            return Ok(*tick_size);
-        }
-
-        // Fetch from API
-        let mut params = HashMap::new();
-        params.insert("token_id".to_string(), token_id.to_string());
-
-        #[derive(Deserialize)]
-        struct TickSizeResponse {
-            minimum_tick_size: String,
-        }
-
-        let response: TickSizeResponse = self
-            .http_client
-            .get(endpoints::GET_TICK_SIZE, None, Some(params))
-            .await?;
-        let tick_size =
-            crate::utilities::parse_tick_size(&response.minimum_tick_size).ok_or_else(|| {
-                ClobError::Other(format!("Invalid tick size: {}", response.minimum_tick_size))
-            })?;
-
-        // Cache the result
-        self.tick_sizes
-            .borrow_mut()
-            .insert(token_id.to_string(), tick_size);
-
-        Ok(tick_size)
-    }
-
-    pub async fn get_neg_risk(&self, token_id: &str) -> ClobResult<bool> {
-        // Check cache first
-        if let Some(&neg_risk) = self.neg_risk.borrow().get(token_id) {
-            return Ok(neg_risk);
-        }
-
-        // Fetch from API
-        let mut params = HashMap::new();
-        params.insert("token_id".to_string(), token_id.to_string());
-
-        #[derive(Deserialize)]
-        struct NegRiskResponse {
-            neg_risk: bool,
-        }
-
-        let response: NegRiskResponse = self
-            .http_client
-            .get(endpoints::GET_NEG_RISK, None, Some(params))
-            .await?;
-
-        // Cache the result
-        self.neg_risk
-            .borrow_mut()
-            .insert(token_id.to_string(), response.neg_risk);
-
-        Ok(response.neg_risk)
-    }
-
-    pub async fn get_fee_rate_bps(&self, token_id: &str) -> ClobResult<u32> {
-        // Check cache first
-        if let Some(&fee_rate) = self.fee_rates.borrow().get(token_id) {
-            return Ok(fee_rate);
-        }
-
-        // Fetch from API
-        let mut params = HashMap::new();
-        params.insert("token_id".to_string(), token_id.to_string());
-
-        #[derive(Deserialize)]
-        struct FeeRateResponse {
-            #[serde(rename = "makerBaseFeeRateBps")]
-            maker_base_fee_rate_bps: u32,
-        }
-
-        let response: FeeRateResponse = self
-            .http_client
-            .get(endpoints::GET_FEE_RATE, None, Some(params))
-            .await?;
-
-        // Cache the result
-        self.fee_rates
-            .borrow_mut()
-            .insert(token_id.to_string(), response.maker_base_fee_rate_bps);
-
-        Ok(response.maker_base_fee_rate_bps)
     }
 }

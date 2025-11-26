@@ -39,10 +39,14 @@ pub mod endpoints {
     pub const GET_MIDPOINT: &str = "/midpoint";
     pub const GET_MIDPOINTS: &str = "/midpoints";
     pub const GET_PRICES_HISTORY: &str = "/prices-history";
+    pub const GET_LAST_TRADE_PRICE: &str = "/last-trade-price";
+    pub const GET_LAST_TRADES_PRICES: &str = "/last-trades-prices";
 
-    // Spreads
-    pub const GET_SPREAD: &str = "/spread";
+    // Token
     pub const GET_SPREADS: &str = "/spreads";
+    pub const GET_TICK_SIZE: &str = "/tick-size";
+    pub const GET_NEG_RISK: &str = "/neg-risk";
+    pub const GET_FEE_RATE: &str = "/fee-rate";
 
     // Order endpoints
     pub const POST_ORDER: &str = "/order";
@@ -65,23 +69,12 @@ pub mod endpoints {
     pub const GET_BALANCE_ALLOWANCE: &str = "/balance-allowance";
     pub const UPDATE_BALANCE_ALLOWANCE: &str = "/balance-allowance/update";
 
-    // Live activity
-    pub const GET_MARKET_TRADES_EVENTS: &str = "/live-activity/events/";
-
-    // Rewards
+    // User Rewards
     pub const GET_EARNINGS_FOR_USER_FOR_DAY: &str = "/rewards/user";
     pub const GET_TOTAL_EARNINGS_FOR_USER_FOR_DAY: &str = "/rewards/user/total";
     pub const GET_LIQUIDITY_REWARD_PERCENTAGES: &str = "/rewards/user/percentages";
-    pub const GET_REWARDS_MARKETS_CURRENT: &str = "/rewards/markets/current";
-    pub const GET_REWARDS_MARKETS: &str = "/rewards/markets/";
     pub const GET_REWARDS_EARNINGS_PERCENTAGES: &str = "/rewards/user/markets";
 
     // Builder endpoints
     pub const GET_BUILDER_TRADES: &str = "/builder/trades";
-
-    pub const GET_LAST_TRADE_PRICE: &str = "/last-trade-price";
-    pub const GET_LAST_TRADES_PRICES: &str = "/last-trades-prices";
-    pub const GET_TICK_SIZE: &str = "/tick-size";
-    pub const GET_NEG_RISK: &str = "/neg-risk";
-    pub const GET_FEE_RATE: &str = "/fee-rate";
 }
