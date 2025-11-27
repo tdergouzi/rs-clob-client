@@ -1,11 +1,11 @@
 mod common;
 
 use rs_clob_client::types::{OrderType, Side, UserMarketOrder};
-use common::create_authenticated_test_client;
+use common::create_test_client_with_wallet;
 
 #[tokio::test]
 async fn test_create_market_sell_order() {
-    let client = create_authenticated_test_client();
+    let client = create_test_client_with_wallet();
 
     // YES token ID
     let yes_token = "71321045679252212594626385532706912750332728571942532289631379312455583992563";

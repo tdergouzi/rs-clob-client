@@ -18,10 +18,9 @@ pub async fn create_l1_headers(
     });
 
     let n = nonce.unwrap_or(0);
-
     let signature = build_clob_eip712_signature(wallet, chain_id, ts, n).await?;
     let address = format!("{:#x}", wallet.address());
-
+    
     Ok(L1PolyHeader {
         poly_address: address,
         poly_signature: signature,

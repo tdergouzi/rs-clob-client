@@ -6,7 +6,6 @@ use rs_builder_signing_sdk::BuilderConfig;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-// Import submodules
 mod auth;
 mod public;
 mod rewards;

@@ -29,6 +29,8 @@ impl ClobClient {
             .await?
             .to_headers();
 
+        println!("Headers: {:?}", headers);
+
         // Make request
         let response: ApiKeyRaw = self
             .http_client
@@ -217,7 +219,7 @@ impl ClobClient {
     pub async fn get_balance_allowance(
         &self,
         params: BalanceAllowanceParams,
-    ) -> ClobResult<BalanceAllowanceResponse> {
+    ) -> ClobResult<serde_json::Value> {
         self.can_l2_auth()?;
 
         let wallet = self.wallet.as_ref().ok_or(ClobError::L1AuthUnavailable)?;

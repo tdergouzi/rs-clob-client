@@ -1,10 +1,10 @@
 mod common;
 
-use common::create_authenticated_test_client;
+use common::create_test_client_with_api_key;
 
 #[tokio::test]
 async fn test_get_order() {
-    let client = create_authenticated_test_client();
+    let client = create_test_client_with_api_key();
 
     // Get order by ID
     let order = client

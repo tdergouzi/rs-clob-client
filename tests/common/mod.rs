@@ -30,7 +30,52 @@ pub fn create_test_client() -> ClobClient {
 }
 
 /// Helper function to create an authenticated test client
-pub fn create_authenticated_test_client() -> ClobClient {
+pub fn create_test_client_with_wallet() -> ClobClient {
+    // Load environment variables from .env file
+    dotenvy::dotenv().ok();
+
+    // Parse private key from environment
+    let pk = env::var("PK").expect("PK must be set");
+    let wallet: PrivateKeySigner = pk.parse().expect("Invalid private key");
+
+    // Parse chain ID
+    let chain_id_str: String = env::var("CHAIN_ID").unwrap_or_else(|_| "80002".to_string());
+    let chain_id: Chain = match chain_id_str.parse::<u64>().unwrap() {
+        137 => Chain::Polygon,
+        80002 => Chain::Amoy,
+        _ => Chain::Amoy,
+    };
+
+    let address = wallet.address();
+    println!("Address: {}, chainId: {}", address, chain_id_str);
+
+    // Get API host
+    let host = env::var("CLOB_API_URL").expect("CLOB_API_URL must be set");
+    let gamma_host = env::var("CLOB_GAMMA_API_URL").expect("CLOB_GAMMA_API_URL must be set");
+
+    // Create API key credentials
+    // let creds = ApiKeyCreds {
+    //     key: env::var("CLOB_API_KEY").expect("CLOB_API_KEY must be set"),
+    //     secret: env::var("CLOB_SECRET").expect("CLOB_SECRET must be set"),
+    //     passphrase: env::var("CLOB_PASS_PHRASE").expect("CLOB_PASS_PHRASE must be set"),
+    // };
+
+    // Create CLOB client
+    ClobClient::new(
+        host,
+        gamma_host,
+        chain_id,
+        Some(wallet),
+        None,
+        Some(1), // signature_type
+        None,    // funder_address
+        None,    // geo_block_token
+        true,    // use_server_time
+        None,    // builder_config
+    )
+}
+
+pub fn create_test_client_with_api_key() -> ClobClient {
     // Load environment variables from .env file
     dotenvy::dotenv().ok();
 
@@ -67,11 +112,10 @@ pub fn create_authenticated_test_client() -> ClobClient {
         chain_id,
         Some(wallet),
         Some(creds),
-        None,     // signature_type
-        None,     // funder_address
-        None,     // geo_block_token
-        false,    // use_server_time
-        None,     // builder_config
+        Some(1), // signature_type
+        None,    // funder_address
+        None,    // geo_block_token
+        true,    // use_server_time
+        None,    // builder_config
     )
 }
-

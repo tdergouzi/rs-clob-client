@@ -36,7 +36,7 @@ impl From<ApiKeyRaw> for ApiKeyCreds {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiKeysResponse {
-    pub api_keys: Vec<ApiKeyCreds>,
+    pub api_keys: Vec<String>,
 }
 
 /// Builder API key

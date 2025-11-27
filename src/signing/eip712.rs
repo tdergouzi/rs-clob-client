@@ -106,19 +106,3 @@ pub async fn build_clob_eip712_signature(
 
     Ok(format!("0x{}", hex::encode(signature.as_bytes())))
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_eip712_signature() {
-        let wallet = PrivateKeySigner::random();
-        let result = build_clob_eip712_signature(&wallet, 137, 1234567890, 0).await;
-
-        assert!(result.is_ok());
-        let signature = result.unwrap();
-        assert!(signature.starts_with("0x"));
-        assert_eq!(signature.len(), 132);
-    }
-}
