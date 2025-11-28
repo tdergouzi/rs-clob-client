@@ -4,7 +4,7 @@ use common::{create_test_client_with_api_key, create_test_client_with_builder_ap
 
 #[tokio::test]
 async fn test_create_builder_api_key() {
-    let client = create_test_client_with_api_key();
+    let client = create_test_client_with_api_key(0);
 
     let result = client
         .create_builder_api_key()
@@ -19,7 +19,7 @@ async fn test_create_builder_api_key() {
 
 #[tokio::test]
 async fn test_get_builder_api_keys() {
-    let client = create_test_client_with_api_key();
+    let client = create_test_client_with_api_key(0);
 
     let result = client
         .get_builder_api_keys()
@@ -34,7 +34,7 @@ async fn test_get_builder_api_keys() {
 
 #[tokio::test]
 async fn test_revoke_builder_api_key() {
-    let client = create_test_client_with_builder_api_key();
+    let client = create_test_client_with_builder_api_key(0);
 
     let result = client
         .revoke_builder_api_key()

@@ -61,15 +61,15 @@ pub fn create_test_client_with_wallet() -> ClobClient {
         chain_id,
         Some(wallet),
         None,
-        Some(0), // signature_type
-        None,    // funder_address
-        None,    // geo_block_token
-        true,    // use_server_time
-        None,    // builder_config
+        Some(0),
+        None,
+        None,
+        true,
+        None,
     )
 }
 
-pub fn create_test_client_with_api_key() -> ClobClient {
+pub fn create_test_client_with_api_key(signature_type: u8) -> ClobClient {
     // Load environment variables from .env file
     dotenvy::dotenv().ok();
 
@@ -99,6 +99,13 @@ pub fn create_test_client_with_api_key() -> ClobClient {
         passphrase: env::var("CLOB_PASSPHRASE").expect("CLOB_PASSPHRASE must be set"),
     };
 
+    // Parse funder address if provided
+    let funder_address = if signature_type == 1 {
+        Some(env::var("POLY_FUNDER_ADDRESS").expect("POLY_FUNDER_ADDRESS must be set"))
+    } else {
+        None
+    };
+
     // Create CLOB client
     ClobClient::new(
         host,
@@ -106,15 +113,15 @@ pub fn create_test_client_with_api_key() -> ClobClient {
         chain_id,
         Some(wallet),
         Some(creds),
-        Some(0), // signature_type
-        None,    // funder_address
-        None,    // geo_block_token
-        true,    // use_server_time
-        None,    // builder_config
+        Some(signature_type),
+        funder_address,
+        None,
+        true,
+        None,
     )
 }
 
-pub fn create_test_client_with_builder_api_key() -> ClobClient {
+pub fn create_test_client_with_builder_api_key(signature_type: u8) -> ClobClient {
     // Load environment variables from .env file
     dotenvy::dotenv().ok();
 
@@ -144,15 +151,24 @@ pub fn create_test_client_with_builder_api_key() -> ClobClient {
         passphrase: env::var("CLOB_PASSPHRASE").expect("CLOB_PASS_PHRASE must be set"),
     };
 
+    // Create builder configuration
     let builder_config = BuilderConfig::new(
         None,
         Some(BuilderApiKeyCreds {
             key: env::var("CLOB_BUILDER_API_KEY").expect("CLOB_BUILDER_API_KEY must be set"),
             secret: env::var("CLOB_BUILDER_SECRET").expect("CLOB_BUILDER_SECRET must be set"),
-            passphrase: env::var("CLOB_BUILDER_PASSPHRASE").expect("CLOB_BUILDER_PASSPHRASE must be set"),
+            passphrase: env::var("CLOB_BUILDER_PASSPHRASE")
+                .expect("CLOB_BUILDER_PASSPHRASE must be set"),
         }),
     )
     .expect("Failed to create builder config");
+
+    // Parse funder address if provided
+    let funder_address = if signature_type == 1 {
+        Some(env::var("POLY_FUNDER_ADDRESS").expect("POLY_FUNDER_ADDRESS must be set"))
+    } else {
+        None
+    };
 
     // Create CLOB client
     ClobClient::new(
@@ -161,8 +177,8 @@ pub fn create_test_client_with_builder_api_key() -> ClobClient {
         chain_id,
         Some(wallet),
         Some(creds),
-        Some(0),
-        None,
+        Some(signature_type),
+        funder_address,
         None,
         true,
         Some(builder_config),

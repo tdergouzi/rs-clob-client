@@ -6,7 +6,7 @@ use rs_clob_client::types::primitives::AssetType;
 
 #[tokio::test]
 async fn test_get_balance_allowance() {
-    let client = create_test_client_with_api_key();
+    let client = create_test_client_with_api_key(0);
 
     let result = client
         .get_balance_allowance(BalanceAllowanceParams {

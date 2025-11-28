@@ -52,7 +52,7 @@ async fn test_create_or_derive_api_key() {
 
 #[tokio::test]
 async fn test_get_api_keys() {
-    let client = create_test_client_with_api_key();
+    let client = create_test_client_with_api_key(0);
 
     let result = client.get_api_keys().await.expect("Failed to get API keys");
 
@@ -64,7 +64,7 @@ async fn test_get_api_keys() {
 
 #[tokio::test]
 async fn test_delete_api_key() {
-    let client = create_test_client_with_api_key();
+    let client = create_test_client_with_api_key(0);
 
     let result = client
         .delete_api_key()
@@ -79,7 +79,7 @@ async fn test_delete_api_key() {
 
 #[tokio::test]
 async fn test_get_closed_only_mode() {
-    let client = create_test_client_with_api_key();
+    let client = create_test_client_with_api_key(0);
 
     let result = client
         .get_closed_only_mode()

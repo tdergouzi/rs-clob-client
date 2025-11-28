@@ -242,14 +242,12 @@ impl ClobClient {
             }
         }
 
-        let params = if query_params.is_empty() {
-            None
-        } else {
-            Some(query_params)
-        };
-
         self.http_client
-            .get(endpoint_path, Some(headers), params)
+            .get(
+                endpoint_path,
+                Some(headers),
+                (!query_params.is_empty()).then_some(query_params),
+            )
             .await
     }
 
@@ -759,4 +757,3 @@ impl ClobClient {
         serde_json::to_value(&signed_order).map_err(|e| ClobError::JsonError(e))
     }
 }
-
