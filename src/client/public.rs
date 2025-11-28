@@ -10,7 +10,7 @@ impl ClobClient {
     // Public Endpoints (No Auth Required)
     // ===================================
 
-    /// Server
+    // Server
     pub async fn get_ok(&self) -> ClobResult<serde_json::Value> {
         self.http_client.get("/", None, None).await
     }
@@ -19,7 +19,7 @@ impl ClobClient {
         self.http_client.get(endpoints::TIME, None, None).await
     }
 
-    /// Tags
+    // Tags
     pub async fn get_tags(&self, params: TagParams) -> ClobResult<Vec<Tag>> {
         let endpoint = endpoints::GET_TAGS;
 
@@ -55,7 +55,7 @@ impl ClobClient {
         Ok(crate::constants::get_popular_tags())
     }
 
-    /// Events
+    // Events
     pub async fn get_events(&self, params: EventParams) -> ClobResult<Vec<Event>> {
         let endpoint = endpoints::GET_EVENTS;
 
@@ -95,7 +95,7 @@ impl ClobClient {
         self.gamma_api_client.get(&endpoint, None, None).await
     }
 
-    /// Markets
+    // Markets
     pub async fn get_markets(&self, params: MarketParams) -> ClobResult<Vec<Market>> {
         let endpoint = endpoints::GET_MARKETS;
 
@@ -134,7 +134,7 @@ impl ClobClient {
         self.gamma_api_client.get(&endpoint, None, None).await
     }
 
-    /// Orderbook
+    // Orderbook
     pub async fn get_order_book(&self, token_id: &str) -> ClobResult<OrderBookSummary> {
         let mut params = HashMap::new();
         params.insert("token_id".to_string(), token_id.to_string());
@@ -157,7 +157,7 @@ impl ClobClient {
         crate::utilities::generate_orderbook_summary_hash(orderbook)
     }
 
-    /// Token
+    // Token
     pub async fn get_spreads(&self, params: Vec<SpreadsParams>) -> ClobResult<serde_json::Value> {
         self.http_client
             .post(endpoints::GET_SPREADS, None, Some(params), None)
@@ -252,7 +252,7 @@ impl ClobClient {
         Ok(response.base_fee)
     }
 
-    /// Prices
+    // Prices
     pub async fn get_price(&self, params: PriceParams) -> ClobResult<Price> {
         let mut query_params = HashMap::new();
         query_params.insert("token_id".to_string(), params.token_id.to_string());

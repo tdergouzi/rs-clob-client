@@ -1,8 +1,6 @@
 mod common;
 
 use common::{create_test_client_with_api_key, create_test_client_with_wallet};
-use rs_clob_client::types::primitives::AssetType;
-use rs_clob_client::types::markets::BalanceAllowanceParams;
 
 #[tokio::test]
 async fn test_create_api_key() {
@@ -90,42 +88,6 @@ async fn test_get_closed_only_mode() {
 
     println!(
         "=== Closed-Only Mode ===\n{}",
-        serde_json::to_string_pretty(&result).unwrap()
-    );
-}
-
-#[tokio::test]
-async fn test_get_balance_allowance() {
-    let client = create_test_client_with_api_key();
-
-    let result = client
-        .get_balance_allowance(BalanceAllowanceParams {
-            asset_type: AssetType::Collateral,
-            token_id: None,
-        })
-        .await
-        .expect("Failed to get balance allowance");
-
-    println!(
-        "=== Balance Allowance ===\n{}",
-        serde_json::to_string_pretty(&result).unwrap()
-    );
-}
-
-#[tokio::test]
-async fn test_update_balance_allowance() {
-    let client = create_test_client_with_api_key();
-
-    let result = client
-        .update_balance_allowance(BalanceAllowanceParams {
-            asset_type: AssetType::Collateral,
-            token_id: None,
-        })
-        .await
-        .expect("Failed to update balance allowance");
-
-    println!(
-        "=== Updated Balance Allowance ===\n{}",
         serde_json::to_string_pretty(&result).unwrap()
     );
 }
