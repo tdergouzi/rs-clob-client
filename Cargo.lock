@@ -2388,9 +2388,9 @@ dependencies = [
 
 [[package]]
 name = "rs-builder-signing-sdk"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6573acf3da84fd2caf7124c48d502e906b6d83ab1b681f22117b2ef7e85c27cc"
+checksum = "2805b2c4c91f7f6a31f5cc19b6b16699e7b115dcef6589d4c89753bf13ada11a"
 dependencies = [
  "base64",
  "hmac",

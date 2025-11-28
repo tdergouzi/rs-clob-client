@@ -348,11 +348,13 @@ impl ClobClient {
             None
         };
 
-        // BuilderHeaderPayload is a HashMap<String, String>, so no conversion needed
         config
             .generate_builder_headers(method, path, body, timestamp)
             .await
-            .map_err(|_e| ClobError::BuilderAuthFailed)
+            .map_err(|e| {
+                eprintln!("Builder header generation error: {:?}", e);
+                ClobError::BuilderAuthFailed
+            })
     }
 
     pub(crate) async fn _generate_builder_headers(
