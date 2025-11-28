@@ -14,6 +14,7 @@ mod trading;
 /// Main CLOB client for interacting with Polymarket's Central Limit Order Book
 pub struct ClobClient {
     /// Base URL for the CLOB API
+    #[allow(unused)]
     pub(crate) host: String,
 
     /// Blockchain network (Polygon or Amoy)

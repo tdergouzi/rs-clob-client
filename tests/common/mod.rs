@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use alloy_signer_local::PrivateKeySigner;
 use rs_builder_signing_sdk::{BuilderApiKeyCreds, BuilderConfig};
 use rs_clob_client::{
