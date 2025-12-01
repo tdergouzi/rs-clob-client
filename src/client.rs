@@ -145,4 +145,8 @@ impl ClobClient {
             builder_config,
         }
     }
+
+    pub fn set_api_creds(&mut self, creds: ApiKeyCreds) {
+        self.creds = Some(creds);
+    }
 }

@@ -748,7 +748,6 @@ impl ClobClient {
             "order": order,
             "owner": owner,
             "orderType": order_type,
-            "deferExec": false
         }))
     }
 
