@@ -2434,6 +2434,8 @@ dependencies = [
 [[package]]
 name = "rs_order_utils"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b78c4a36a766f0a2bf80fdfd60f2197665e0cceb3a32d596ce7f8f7d4f53373"
 dependencies = [
  "alloy-primitives",
  "alloy-signer",

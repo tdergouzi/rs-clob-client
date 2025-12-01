@@ -686,7 +686,6 @@ impl ClobClient {
         order_type: OrderType,
     ) -> ClobResult<f64> {
         let orderbook = self.get_order_book(token_id).await?;
-
         match side {
             Side::Buy => {
                 if orderbook.asks.is_empty() {
@@ -753,6 +752,19 @@ impl ClobClient {
 
     /// Converts a SignedOrder to JSON format for API submission
     fn signed_order_to_json(&self, signed_order: SignedOrder) -> ClobResult<serde_json::Value> {
-        serde_json::to_value(&signed_order).map_err(|e| ClobError::JsonError(e))
+        let mut json = serde_json::to_value(&signed_order).map_err(|e| ClobError::JsonError(e))?;
+        
+        // Convert numeric side ("0" or "1") to string side ("BUY" or "SELL")
+        // The API expects "BUY"/"SELL" strings, not numeric values
+        if let Some(side) = json.get("side") {
+            let side_str = match side.as_str() {
+                Some("0") => "BUY",
+                Some("1") => "SELL",
+                _ => return Ok(json), // Keep as-is if already correct format
+            };
+            json["side"] = serde_json::Value::String(side_str.to_string());
+        }
+        
+        Ok(json)
     }
 }
