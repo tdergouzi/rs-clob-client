@@ -1,9 +1,7 @@
 mod common;
 
 use common::create_test_client_with_wallet;
-use rs_clob_client::types::{
-    CreateOrderOptions, OrderType, Side, TickSize, TradeParams, UserLimitOrder, UserMarketOrder,
-};
+use rs_clob_client::types::{OrderType, Side, TradeParams, UserLimitOrder, UserMarketOrder};
 
 /// Fed decision in December 25 bps decrease yes token ID
 const YES_TOKEN: &str =
@@ -206,7 +204,7 @@ async fn test_get_open_order() {
 }
 
 #[tokio::test]
-async fn test_cancel_order(){
+async fn test_cancel_order() {
     let mut client = create_test_client_with_wallet();
     let creds = client
         .create_or_derive_api_key(None)

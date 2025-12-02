@@ -560,62 +560,6 @@ impl ClobClient {
             .await
     }
 
-    /// Checks if an order is eligible for rewards
-    pub async fn is_order_scoring(&self, params: OrderScoringParams) -> ClobResult<OrderScoring> {
-        self.can_l2_auth()?;
-
-        let wallet = self.wallet.as_ref().ok_or(ClobError::L1AuthUnavailable)?;
-        let creds = self.creds.as_ref().ok_or(ClobError::L2AuthNotAvailable)?;
-
-        let endpoint_path = endpoints::IS_ORDER_SCORING;
-        let timestamp = if self.use_server_time {
-            Some(self.get_server_time().await?)
-        } else {
-            None
-        };
-
-        let headers = create_l2_headers(wallet, creds, "GET", endpoint_path, None, timestamp)
-            .await?
-            .to_headers();
-
-        let mut query_params = HashMap::new();
-        query_params.insert("order_id".to_string(), params.order_id);
-
-        self.http_client
-            .get(endpoint_path, Some(headers), Some(query_params))
-            .await
-    }
-
-    /// Checks if multiple orders are eligible for rewards
-    pub async fn are_orders_scoring(
-        &self,
-        params: OrdersScoringParams,
-    ) -> ClobResult<OrdersScoring> {
-        self.can_l2_auth()?;
-
-        let wallet = self.wallet.as_ref().ok_or(ClobError::L1AuthUnavailable)?;
-        let creds = self.creds.as_ref().ok_or(ClobError::L2AuthNotAvailable)?;
-
-        let endpoint_path = endpoints::ARE_ORDERS_SCORING;
-        let timestamp = if self.use_server_time {
-            Some(self.get_server_time().await?)
-        } else {
-            None
-        };
-
-        let headers = create_l2_headers(wallet, creds, "GET", endpoint_path, None, timestamp)
-            .await?
-            .to_headers();
-
-        let mut query_params = HashMap::new();
-        query_params.insert("order_ids".to_string(), params.order_ids.join(","));
-
-        self.http_client
-            .get(endpoint_path, Some(headers), Some(query_params))
-            .await
-    }
-
-
     // ===================================
     // Builder Auth Methods (Trades)
     // ===================================
