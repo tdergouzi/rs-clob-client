@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 impl ClobClient {
     // ===================================
-    // L1 Auth Methods (Order Creation)
+    // L1 Auth Methods
     // ===================================
 
     /// Creates a signed limit order
@@ -139,7 +139,7 @@ impl ClobClient {
     }
 
     // ===================================
-    // L2 Auth Methods (Order Operations)
+    // L2 Auth Methods
     // ===================================
 
     /// Creates and posts a limit order in one call
@@ -184,8 +184,83 @@ impl ClobClient {
         self.post_order(order, order_type).await
     }
 
-    /// Gets an order by ID
-    pub async fn get_order(&self, order_id: &str) -> ClobResult<OpenOrder> {
+    /// Gets all trade history with automatic pagination
+    pub async fn get_trades(&self, params: Option<TradeParams>) -> ClobResult<Vec<Trade>> {
+        self.can_l2_auth()?;
+
+        let mut results = Vec::new();
+        let mut next_cursor = INITIAL_CURSOR.to_string();
+
+        while next_cursor != END_CURSOR {
+            let response = self
+                .get_trades_paginated(params.clone(), Some(next_cursor.clone()))
+                .await?;
+            next_cursor = response.next_cursor;
+            results.extend(response.data);
+        }
+
+        Ok(results)
+    }
+
+    /// Gets trades with pagination support
+    pub async fn get_trades_paginated(
+        &self,
+        params: Option<TradeParams>,
+        cursor: Option<String>,
+    ) -> ClobResult<TradesPaginatedResponse> {
+        self.can_l2_auth()?;
+
+        let wallet = self.wallet.as_ref().ok_or(ClobError::L1AuthUnavailable)?;
+        let creds = self.creds.as_ref().ok_or(ClobError::L2AuthNotAvailable)?;
+
+        let endpoint_path = endpoints::GET_TRADES;
+        let timestamp = if self.use_server_time {
+            Some(self.get_server_time().await?)
+        } else {
+            None
+        };
+
+        let headers = create_l2_headers(wallet, creds, "GET", endpoint_path, None, timestamp)
+            .await?
+            .to_headers();
+
+        let mut query_params = HashMap::new();
+
+        // Add cursor
+        query_params.insert(
+            "next_cursor".to_string(),
+            cursor.unwrap_or_else(|| INITIAL_CURSOR.to_string()),
+        );
+
+        // Add user params
+        if let Some(p) = params {
+            if let Some(id) = p.id {
+                query_params.insert("id".to_string(), id);
+            }
+            if let Some(market) = p.market {
+                query_params.insert("market".to_string(), market);
+            }
+            if let Some(asset_id) = p.asset_id {
+                query_params.insert("asset_id".to_string(), asset_id);
+            }
+            if let Some(maker) = p.maker_address {
+                query_params.insert("maker_address".to_string(), maker);
+            }
+            if let Some(before) = p.before {
+                query_params.insert("before".to_string(), before.to_string());
+            }
+            if let Some(after) = p.after {
+                query_params.insert("after".to_string(), after.to_string());
+            }
+        }
+
+        self.http_client
+            .get(endpoint_path, Some(headers), Some(query_params))
+            .await
+    }
+
+    /// Gets an open order by ID
+    pub async fn get_open_order(&self, order_id: &str) -> ClobResult<OpenOrder> {
         self.can_l2_auth()?;
 
         let wallet = self.wallet.as_ref().ok_or(ClobError::L1AuthUnavailable)?;
@@ -538,84 +613,6 @@ impl ClobClient {
             .await
     }
 
-    // ===================================
-    // L2 Auth Methods (Trade History)
-    // ===================================
-
-    /// Gets all trades with automatic pagination
-    pub async fn get_trades(&self, params: Option<TradeParams>) -> ClobResult<Vec<Trade>> {
-        self.can_l2_auth()?;
-
-        let mut results = Vec::new();
-        let mut next_cursor = INITIAL_CURSOR.to_string();
-
-        while next_cursor != END_CURSOR {
-            let response = self
-                .get_trades_paginated(params.clone(), Some(next_cursor.clone()))
-                .await?;
-            next_cursor = response.next_cursor;
-            results.extend(response.data);
-        }
-
-        Ok(results)
-    }
-
-    /// Gets trades with pagination support
-    pub async fn get_trades_paginated(
-        &self,
-        params: Option<TradeParams>,
-        cursor: Option<String>,
-    ) -> ClobResult<TradesPaginatedResponse> {
-        self.can_l2_auth()?;
-
-        let wallet = self.wallet.as_ref().ok_or(ClobError::L1AuthUnavailable)?;
-        let creds = self.creds.as_ref().ok_or(ClobError::L2AuthNotAvailable)?;
-
-        let endpoint_path = endpoints::GET_TRADES;
-        let timestamp = if self.use_server_time {
-            Some(self.get_server_time().await?)
-        } else {
-            None
-        };
-
-        let headers = create_l2_headers(wallet, creds, "GET", endpoint_path, None, timestamp)
-            .await?
-            .to_headers();
-
-        let mut query_params = HashMap::new();
-
-        // Add cursor
-        query_params.insert(
-            "next_cursor".to_string(),
-            cursor.unwrap_or_else(|| INITIAL_CURSOR.to_string()),
-        );
-
-        // Add user params
-        if let Some(p) = params {
-            if let Some(id) = p.id {
-                query_params.insert("id".to_string(), id);
-            }
-            if let Some(market) = p.market {
-                query_params.insert("market".to_string(), market);
-            }
-            if let Some(asset_id) = p.asset_id {
-                query_params.insert("asset_id".to_string(), asset_id);
-            }
-            if let Some(maker) = p.maker_address {
-                query_params.insert("maker_address".to_string(), maker);
-            }
-            if let Some(before) = p.before {
-                query_params.insert("before".to_string(), before.to_string());
-            }
-            if let Some(after) = p.after {
-                query_params.insert("after".to_string(), after.to_string());
-            }
-        }
-
-        self.http_client
-            .get(endpoint_path, Some(headers), Some(query_params))
-            .await
-    }
 
     // ===================================
     // Builder Auth Methods (Trades)

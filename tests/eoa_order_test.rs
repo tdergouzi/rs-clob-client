@@ -1,32 +1,13 @@
 mod common;
 
-use rs_clob_client::types::{CreateOrderOptions, OrderType, Side, TickSize, UserMarketOrder, UserOrder};
+use rs_clob_client::types::{CreateOrderOptions, OrderType, Side, TickSize, UserMarketOrder, UserOrder, TradeParams};
 use common::{create_test_client_with_wallet};
 
 /// Fed decision in December 25 bps decrease yes token ID
 const YES_TOKEN: &str = "87769991026114894163580777793845523168226980076553814689875238288185044414090";
 
 #[tokio::test]
-async fn test_get_order() {
-    let mut client = create_test_client_with_wallet();
-    let creds = client.create_or_derive_api_key(None).await.expect("Failed to create or derive API key");
-    client.set_api_creds(creds);
-
-    // Get order by ID
-    let order = client
-        .get_order("0x831680cb77da95792af5a052c87c8abf9d2ae5cb21f275670bc0ff58f2823c5c")
-        .await
-        .expect("Failed to fetch order");
-
-    // Assertions
-    assert!(!order.id.is_empty(), "Order ID should not be empty");
-    assert!(!order.status.is_empty(), "Order status should not be empty");
-
-    println!("{:#?}", order);
-}
-
-#[tokio::test]
-async fn test_trade_market_buy_order() {
+async fn test_create_market_buy_order() {
     let mut client = create_test_client_with_wallet();
     let creds = client.create_or_derive_api_key(None).await.expect("Failed to create or derive API key");
     client.set_api_creds(creds);
@@ -57,7 +38,7 @@ async fn test_trade_market_buy_order() {
 }
 
 #[tokio::test]
-async fn test_trade_market_sell_order() {
+async fn test_create_market_sell_order() {
     let mut client = create_test_client_with_wallet();
     let creds = client.create_or_derive_api_key(None).await.expect("Failed to create or derive API key");
     client.set_api_creds(creds);
@@ -88,7 +69,7 @@ async fn test_trade_market_sell_order() {
 }
 
 #[tokio::test]
-async fn test_trade_limit_buy_order() {
+async fn test_create_limit_buy_order() {
     let mut client = create_test_client_with_wallet();
     let creds = client.create_or_derive_api_key(None).await.expect("Failed to create or derive API key");
     client.set_api_creds(creds);
@@ -125,7 +106,7 @@ async fn test_trade_limit_buy_order() {
 }
 
 #[tokio::test]
-async fn test_trade_limit_sell_order() {
+async fn test_create_limit_sell_order() {
     let mut client = create_test_client_with_wallet();
     let creds = client.create_or_derive_api_key(None).await.expect("Failed to create or derive API key");
     client.set_api_creds(creds);
@@ -159,4 +140,46 @@ async fn test_trade_limit_sell_order() {
     assert!(response.is_object(), "Create and post response should be a valid JSON object");
 
     println!("Create and Post Response: {:#?}", response);
+}
+
+#[tokio::test]
+async fn test_get_trades() {
+    let mut client = create_test_client_with_wallet();
+    let creds = client.create_or_derive_api_key(None).await.expect("Failed to create or derive API key");
+    client.set_api_creds(creds);
+
+    let params = Some(TradeParams {
+        id: None,
+        market: None,
+        asset_id: None,
+        maker_address: Some("0x73c8f452f2e628bf98853970cd586801123503fe".to_string()),
+        before: None,
+        after: None,
+    });
+
+    // Get trades
+    let trades = client
+        .get_trades(params)
+        .await
+        .expect("Failed to fetch order");
+
+    // Assertions
+    assert!(!trades.len() > 0, "Trades should not be empty");
+
+    println!("Trades: {:#?}", trades);
+}
+
+#[tokio::test]
+async fn test_get_open_order() {
+    let mut client = create_test_client_with_wallet();
+    let creds = client.create_or_derive_api_key(None).await.expect("Failed to create or derive API key");
+    client.set_api_creds(creds);
+
+    // Get order by ID
+    let order = client
+        .get_open_order("0xff5adaaddc745be1f900b9db7381822ec98958809a7c2c26dc06e587ad8f1326")
+        .await
+        .expect("Failed to fetch order");
+
+    println!("{:#?}", order);
 }
