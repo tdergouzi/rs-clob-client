@@ -16,6 +16,12 @@ alloy-signer-local = "0.5"
 tokio = { version = "1.0", features = ["full"] }
 ```
 
+## API Documentation
+
+- [Public API](./docs/api-public.md) - Market data, orderbook, prices (No auth required)
+- [Auth API](./docs/api-auth.md) - API key management, balance, notifications
+- [Trading API](./docs/api-trading.md) - Order creation, submission, cancellation
+
 ## Quick Start
 
 ### Basic Setup and Placing an Order
