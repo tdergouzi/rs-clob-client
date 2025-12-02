@@ -8,8 +8,8 @@ use std::collections::HashMap;
 
 mod auth;
 mod public;
-mod rewards;
 mod trading;
+// mod rewards; // No tests for rewards yet
 
 /// Main CLOB client for interacting with Polymarket's Central Limit Order Book
 pub struct ClobClient {
@@ -36,6 +36,7 @@ pub struct ClobClient {
     pub(crate) order_builder: Option<OrderBuilder>,
 
     /// Signature type for orders (0 = EOA, 1 = Poly Proxy, 2 = EIP-1271)
+    #[allow(unused)]
     pub(crate) signature_type: u8,
 
     /// Cached tick sizes for tokens (uses interior mutability)
