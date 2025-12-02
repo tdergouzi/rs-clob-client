@@ -186,6 +186,7 @@ impl ClobClient {
     }
 
     /// Gets all trade history with automatic pagination
+    /// Note: The trades history only includes trades that have been executed, does not include limit orders
     pub async fn get_trades(&self, params: Option<TradeParams>) -> ClobResult<Vec<Trade>> {
         self.can_l2_auth()?;
 
