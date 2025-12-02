@@ -21,5 +21,5 @@ pub use types::*;
 pub mod prelude {
     pub use crate::client::ClobClient;
     pub use crate::errors::{ClobError, ClobResult};
-    pub use crate::types::{ApiKeyCreds, Chain, OrderType, Side, UserMarketOrder, UserOrder};
+    pub use crate::types::{ApiKeyCreds, Chain, OrderType, Side, UserMarketOrder, UserLimitOrder};
 }

@@ -1,6 +1,6 @@
 mod common;
 
-use rs_clob_client::types::{CreateOrderOptions, OrderType, Side, TickSize, UserMarketOrder, UserOrder, TradeParams};
+use rs_clob_client::types::{CreateOrderOptions, OrderType, Side, TickSize, UserMarketOrder, UserLimitOrder, TradeParams};
 use common::{create_test_client_with_wallet};
 
 /// Fed decision in December 25 bps decrease yes token ID
@@ -74,16 +74,13 @@ async fn test_create_limit_buy_order() {
     let creds = client.create_or_derive_api_key(None).await.expect("Failed to create or derive API key");
     client.set_api_creds(creds);
 
-    // YES token ID
-    let yes_token = "71321045679252212594626385532706912750332728571942532289631379312455583992563";
-
     // Create the order and send it to the server in a single step
     let response = client
-        .create_and_post_order(
-            &UserOrder {
-                token_id: yes_token.to_string(),
-                price: 0.50,
-                size: 100.0, // SHARES
+        .create_and_post_limit_order(
+            &UserLimitOrder {
+                token_id: YES_TOKEN.to_string(),
+                price: 0.80,
+                size: 5.0, // SHARES
                 side: Side::Buy,
                 fee_rate_bps: None,
                 nonce: None,
@@ -111,14 +108,11 @@ async fn test_create_limit_sell_order() {
     let creds = client.create_or_derive_api_key(None).await.expect("Failed to create or derive API key");
     client.set_api_creds(creds);
 
-    // YES token ID
-    let yes_token = "71321045679252212594626385532706912750332728571942532289631379312455583992563";
-
     // Create the order and send it to the server in a single step
     let response = client
-        .create_and_post_order(
-            &UserOrder {
-                token_id: yes_token.to_string(),
+        .create_and_post_limit_order(
+            &UserLimitOrder {
+                token_id: YES_TOKEN.to_string(),
                 price: 0.60,
                 size: 110.0, // SHARES
                 side: Side::Sell,

@@ -23,14 +23,14 @@ impl ClobClient {
     /// # Returns
     ///
     /// A JSON representation of the signed order ready for posting
-    pub async fn create_order(
+    pub async fn create_limit_order(
         &self,
-        user_order: &UserOrder,
+        user_limit_order: &UserLimitOrder,
         options: Option<CreateOrderOptions>,
     ) -> ClobResult<serde_json::Value> {
         self.can_l1_auth()?;
 
-        let token_id = &user_order.token_id;
+        let token_id = &user_limit_order.token_id;
 
         // Resolve tick size
         let tick_size = if let Some(opts) = &options {
@@ -41,7 +41,7 @@ impl ClobClient {
 
         // Resolve fee rate
         let fee_rate_bps = self
-            ._resolve_fee_rate_bps(token_id, user_order.fee_rate_bps)
+            ._resolve_fee_rate_bps(token_id, user_limit_order.fee_rate_bps)
             .await?;
 
         // Resolve neg_risk
@@ -56,7 +56,7 @@ impl ClobClient {
             neg_risk: Some(neg_risk),
         };
 
-        let mut order = user_order.clone();
+        let mut order = user_limit_order.clone();
         order.fee_rate_bps = Some(fee_rate_bps);
 
         let order_builder = self
@@ -64,7 +64,7 @@ impl ClobClient {
             .as_ref()
             .ok_or(ClobError::L1AuthUnavailable)?;
 
-        let signed_order = order_builder.build_order(&order, &create_options).await?;
+        let signed_order = order_builder.build_limit_order(&order, &create_options).await?;
         self.signed_order_to_json(signed_order)
     }
 
@@ -146,20 +146,21 @@ impl ClobClient {
     ///
     /// # Arguments
     ///
-    /// * `user_order` - Order parameters
+    /// * `user_order` - Order parameters, the size is in shares both for buy and sell
     /// * `options` - Optional CreateOrderOptions
     /// * `order_type` - GTC, FOK, FAK, or GTD
+    /// 
     ///
     /// # Returns
     ///
     /// API response with order status
-    pub async fn create_and_post_order(
+    pub async fn create_and_post_limit_order(
         &self,
-        user_order: &UserOrder,
+        user_limit_order: &UserLimitOrder,
         options: Option<CreateOrderOptions>,
         order_type: OrderType,
     ) -> ClobResult<serde_json::Value> {
-        let order = self.create_order(user_order, options).await?;
+        let order = self.create_limit_order(user_limit_order, options).await?;
         self.post_order(order, order_type).await
     }
 

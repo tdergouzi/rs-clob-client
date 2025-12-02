@@ -2,7 +2,7 @@ use crate::constants::{get_contract_config, COLLATERAL_TOKEN_DECIMALS};
 use crate::errors::{ClobError, ClobResult};
 use crate::types::{
     Chain, CreateOrderOptions, OrderSummary, OrderType, RoundConfig, Side, TickSize,
-    UserMarketOrder, UserOrder,
+    UserMarketOrder, UserLimitOrder,
 };
 use crate::utilities::{decimal_places, round_down, round_normal, round_up};
 use alloy_primitives::{Address, U256};
@@ -234,30 +234,30 @@ fn parse_units(value: f64, decimals: u8) -> U256 {
     U256::from(raw_value)
 }
 
-pub fn build_order_creation_args(
+pub fn build_limit_order_creation_args(
     signer_address: Address,
     maker: Address,
     signature_type: SignatureType,
-    user_order: &UserOrder,
+    user_limit_order: &UserLimitOrder,
     round_config: &RoundConfig,
 ) -> ClobResult<OrderData> {
     let raw_amounts = get_order_raw_amounts(
-        user_order.side,
-        user_order.size,
-        user_order.price,
+        user_limit_order.side,
+        user_limit_order.size,
+        user_limit_order.price,
         round_config,
     );
 
     let maker_amount = parse_units(raw_amounts.raw_maker_amt, COLLATERAL_TOKEN_DECIMALS);
     let taker_amount = parse_units(raw_amounts.raw_taker_amt, COLLATERAL_TOKEN_DECIMALS);
 
-    let taker = user_order.taker.unwrap_or(Address::ZERO);
+    let taker = user_limit_order.taker.unwrap_or(Address::ZERO);
 
-    let fee_rate_bps = U256::from(user_order.fee_rate_bps.unwrap_or(0));
-    let nonce = U256::from(user_order.nonce.unwrap_or(0));
-    let expiration = user_order.expiration.map(U256::from);
+    let fee_rate_bps = U256::from(user_limit_order.fee_rate_bps.unwrap_or(0));
+    let nonce = U256::from(user_limit_order.nonce.unwrap_or(0));
+    let expiration = user_limit_order.expiration.map(U256::from);
 
-    let token_id = U256::from_str(&user_order.token_id)
+    let token_id = U256::from_str(&user_limit_order.token_id)
         .map_err(|e| ClobError::Other(format!("Invalid token_id: {}", e)))?;
 
     let side = match raw_amounts.side {
@@ -280,12 +280,12 @@ pub fn build_order_creation_args(
     })
 }
 
-pub async fn create_order(
+pub async fn create_limit_order(
     wallet: PrivateKeySigner,
     chain_id: Chain,
     signature_type: SignatureType,
     funder_address: Option<Address>,
-    user_order: &UserOrder,
+    user_limit_order: &UserLimitOrder,
     options: &CreateOrderOptions,
 ) -> ClobResult<SignedOrder> {
     let signer_address = wallet.address();
@@ -295,11 +295,11 @@ pub async fn create_order(
 
     let round_config = get_rounding_config(options.tick_size);
 
-    let order_data = build_order_creation_args(
+    let order_data = build_limit_order_creation_args(
         signer_address,
         maker,
         signature_type,
-        user_order,
+        user_limit_order,
         &round_config,
     )?;
 

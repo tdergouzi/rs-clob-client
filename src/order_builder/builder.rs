@@ -1,5 +1,5 @@
 use crate::errors::ClobResult;
-use crate::types::{Chain, CreateOrderOptions, UserMarketOrder, UserOrder};
+use crate::types::{Chain, CreateOrderOptions, UserMarketOrder, UserLimitOrder};
 use alloy_primitives::Address;
 use alloy_signer_local::PrivateKeySigner;
 use rs_order_utils::{SignatureType, SignedOrder};
@@ -7,7 +7,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use super::helpers::{create_market_order, create_order};
+use super::helpers::{create_market_order, create_limit_order};
 
 /// Type alias for dynamic signer resolver function
 type GetSignerFn = Arc<
@@ -44,18 +44,18 @@ impl OrderBuilder {
     }
 
     /// Generates and signs a limit order
-    pub async fn build_order(
+    pub async fn build_limit_order(
         &self,
-        user_order: &UserOrder,
+        user_limit_order: &UserLimitOrder,
         options: &CreateOrderOptions,
     ) -> ClobResult<SignedOrder> {
         let signer = self.resolve_signer().await?;
-        create_order(
+        create_limit_order(
             signer,
             self.chain_id,
             self.signature_type,
             self.funder_address,
-            user_order,
+            user_limit_order,
             options,
         )
         .await

@@ -10,7 +10,7 @@ use super::primitives::{OrderType, Side};
 
 /// Simplified user order for creating limit orders
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UserOrder {
+pub struct UserLimitOrder {
     /// Token ID of the conditional token asset being traded
     #[serde(rename = "tokenID")]
     pub token_id: String,
