@@ -39,7 +39,7 @@ async fn test_get_market_by_id() {
     let client = create_test_client();
 
     let market: Market = client
-        .get_market_by_id("690560")
+        .get_market_by_id("716407")
         .await
         .expect("Failed to fetch market");
 

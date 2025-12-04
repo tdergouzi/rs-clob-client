@@ -8,7 +8,7 @@ async fn test_get_orderbook() {
     let client = create_test_client();
 
     // YES token ID
-    let yes_token = "98861221941952098410661779464520326542627371393679468645396942578853799448969";
+    let yes_token = "17485324633782403667662076761548030320520944195229065834792808204789898306659";
 
     // Get orderbook
     let orderbook = client
@@ -22,10 +22,12 @@ async fn test_get_orderbook() {
         "Orderbook should have at least bids or asks"
     );
 
-    println!(
-        "Orderbook: {}",
-        serde_json::to_string_pretty(&orderbook).unwrap()
-    );
+    // println!(
+    //     "Orderbook: {}",
+    //     serde_json::to_string_pretty(&orderbook).unwrap()
+    // );
+
+    println!("Orderbook the last ask: {:?}", orderbook.asks[orderbook.asks.len() - 1]);
 }
 
 #[tokio::test]

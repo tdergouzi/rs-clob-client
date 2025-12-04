@@ -56,7 +56,7 @@ async fn test_get_event_by_slug() {
 
     // Get first page of sampling markets
     let event: Event = client
-        .get_event_by_slug("super-bowl-champion-2026-731")
+        .get_event_by_slug("ethereum-above-on-december-4")
         .await
         .expect("Failed to fetch events");
 

@@ -194,7 +194,7 @@ async fn test_get_open_order() {
         .expect("Failed to create or derive API key");
     client.set_api_creds(creds);
 
-    let order_id = "0x9dd18101e23536c20c65decd73bc867d1a26fe6a34218d54029d74d3cdfdbf85"; // Market sell order
+    let order_id = "0x2601867f24395c00f981dabedfd92ab86cec62a018b68eec6908f01ebbdd812c"; // Market sell order
     let order = client
         .get_open_order(order_id)
         .await
