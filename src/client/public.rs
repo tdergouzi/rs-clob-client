@@ -166,7 +166,7 @@ impl ClobClient {
 
     pub async fn get_tick_size(&self, token_id: &str) -> ClobResult<TickSize> {
         // Check cache first
-        if let Some(tick_size) = self.tick_sizes.borrow().get(token_id) {
+        if let Some(tick_size) = self.tick_sizes.read().unwrap().get(token_id) {
             return Ok(*tick_size);
         }
 
@@ -190,7 +190,8 @@ impl ClobClient {
 
         // Cache the result
         self.tick_sizes
-            .borrow_mut()
+            .write()
+            .unwrap()
             .insert(token_id.to_string(), tick_size);
 
         Ok(tick_size)
@@ -198,7 +199,7 @@ impl ClobClient {
 
     pub async fn get_neg_risk(&self, token_id: &str) -> ClobResult<bool> {
         // Check cache first
-        if let Some(&neg_risk) = self.neg_risk.borrow().get(token_id) {
+        if let Some(&neg_risk) = self.neg_risk.read().unwrap().get(token_id) {
             return Ok(neg_risk);
         }
 
@@ -218,7 +219,8 @@ impl ClobClient {
 
         // Cache the result
         self.neg_risk
-            .borrow_mut()
+            .write()
+            .unwrap()
             .insert(token_id.to_string(), response.neg_risk);
 
         Ok(response.neg_risk)
@@ -246,7 +248,8 @@ impl ClobClient {
 
         // Cache the result
         self.fee_rates
-            .borrow_mut()
+            .write()
+            .unwrap()
             .insert(token_id.to_string(), response.base_fee);
 
         Ok(response.base_fee)

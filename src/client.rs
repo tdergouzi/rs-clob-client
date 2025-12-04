@@ -3,7 +3,7 @@ use crate::order_builder::OrderBuilder;
 use crate::types::*;
 use alloy_signer_local::PrivateKeySigner;
 use rs_builder_signing_sdk::BuilderConfig;
-use std::cell::RefCell;
+use std::sync::RwLock;
 use std::collections::HashMap;
 
 mod auth;
@@ -39,14 +39,14 @@ pub struct ClobClient {
     #[allow(unused)]
     pub(crate) signature_type: u8,
 
-    /// Cached tick sizes for tokens (uses interior mutability)
-    pub(crate) tick_sizes: RefCell<HashMap<String, TickSize>>,
+    /// Cached tick sizes for tokens (thread-safe)
+    pub(crate) tick_sizes: RwLock<HashMap<String, TickSize>>,
 
-    /// Cached negative risk flags for tokens (uses interior mutability)
-    pub(crate) neg_risk: RefCell<HashMap<String, bool>>,
+    /// Cached negative risk flags for tokens (thread-safe)
+    pub(crate) neg_risk: RwLock<HashMap<String, bool>>,
 
-    /// Cached fee rates for tokens (uses interior mutability)
-    pub(crate) fee_rates: RefCell<HashMap<String, u32>>,
+    /// Cached fee rates for tokens (thread-safe)
+    pub(crate) fee_rates: RwLock<HashMap<String, u32>>,
 
     /// Whether to use server time for signatures
     pub(crate) use_server_time: bool,
@@ -139,9 +139,9 @@ impl ClobClient {
             creds,
             order_builder,
             signature_type: sig_type,
-            tick_sizes: RefCell::new(HashMap::new()),
-            neg_risk: RefCell::new(HashMap::new()),
-            fee_rates: RefCell::new(HashMap::new()),
+            tick_sizes: RwLock::new(HashMap::new()),
+            neg_risk: RwLock::new(HashMap::new()),
+            fee_rates: RwLock::new(HashMap::new()),
             use_server_time,
             builder_config,
         }
