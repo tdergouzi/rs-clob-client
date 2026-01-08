@@ -18,7 +18,7 @@ pub fn build_poly_hmac_signature(
         message.push_str(body_str);
     }
 
-    let secret_bytes = general_purpose::URL_SAFE_NO_PAD.decode(secret)?;
+    let secret_bytes = general_purpose::URL_SAFE.decode(secret)?;
 
     let mut mac = HmacSha256::new_from_slice(&secret_bytes)
         .map_err(|e| crate::errors::ClobError::SigningError(e.to_string()))?;
