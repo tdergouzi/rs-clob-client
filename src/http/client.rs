@@ -20,6 +20,24 @@ impl HttpClient {
         }
     }
 
+    /// Create a new HTTP client with proxy support
+    /// proxy_url format: http://user:pass@host:port
+    pub fn with_proxy(base_url: String, proxy_url: &str) -> ClobResult<Self> {
+        let proxy = reqwest::Proxy::all(proxy_url)
+            .map_err(|e| ClobError::Other(format!("Invalid proxy URL: {}", e)))?;
+
+        let client = Client::builder()
+            .proxy(proxy)
+            .build()
+            .map_err(|e| ClobError::Other(format!("Failed to build client with proxy: {}", e)))?;
+
+        Ok(Self {
+            client,
+            base_url,
+            geo_block_token: None,
+        })
+    }
+
     /// Set a geo-block token for bypassing geographic restrictions
     pub fn with_geo_block_token(mut self, token: String) -> Self {
         self.geo_block_token = Some(token);

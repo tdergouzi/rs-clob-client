@@ -1,3 +1,4 @@
+use crate::errors::ClobResult;
 use crate::http::HttpClient;
 use crate::order_builder::OrderBuilder;
 use crate::types::*;
@@ -69,6 +70,7 @@ impl ClobClient {
     /// * `geo_block_token` - Optional geo-block token
     /// * `use_server_time` - Whether to use server time for signatures
     /// * `builder_config` - Optional builder configuration for builder API authentication
+    /// * `host_proxy_url` - Optional proxy URL for HTTP requests (format: http://user:pass@host:port)
     pub fn new(
         host: String,
         gamma_host: String,
@@ -80,7 +82,8 @@ impl ClobClient {
         geo_block_token: Option<String>,
         use_server_time: bool,
         builder_config: Option<BuilderConfig>,
-    ) -> Self {
+        host_proxy_url: Option<String>,
+    ) -> ClobResult<Self> {
         let host = if host.ends_with('/') {
             host[..host.len() - 1].to_string()
         } else {
@@ -123,14 +126,19 @@ impl ClobClient {
             )
         });
 
-        // Create HTTP client and set geo_block_token if provided
-        let http_client = if let Some(token) = &geo_block_token {
-            HttpClient::new(host.clone()).with_geo_block_token(token.clone())
-        } else {
-            HttpClient::new(host.clone())
+        // Create HTTP client with optional proxy and geo_block_token
+        let http_client = match (&host_proxy_url, &geo_block_token) {
+            (Some(proxy), Some(token)) => {
+                HttpClient::with_proxy(host.clone(), proxy)?.with_geo_block_token(token.clone())
+            }
+            (Some(proxy), None) => HttpClient::with_proxy(host.clone(), proxy)?,
+            (None, Some(token)) => {
+                HttpClient::new(host.clone()).with_geo_block_token(token.clone())
+            }
+            (None, None) => HttpClient::new(host.clone()),
         };
 
-        Self {
+        Ok(Self {
             http_client,
             gamma_api_client,
             host,
@@ -144,7 +152,7 @@ impl ClobClient {
             fee_rates: RwLock::new(HashMap::new()),
             use_server_time,
             builder_config,
-        }
+        })
     }
 
     pub fn set_api_creds(&mut self, creds: ApiKeyCreds) {
