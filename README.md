@@ -38,34 +38,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // Initialize the CLOB client
     let host = "https://clob.polymarket.com".to_string();
-    let chain_id = Chain::Polygon; // 137
-    
+    let gamma_host = "https://gamma-api.polymarket.com".to_string();
+
     // Create or derive API credentials
     let temp_client = ClobClient::new(
-        host.clone(),
-        chain_id,
-        Some(wallet.clone()),
-        None,
-        None,
-        None,
-        None,
-        false,
-        None,
-    );
+        host.clone(), gamma_host.clone(), Chain::Polygon,
+        Some(wallet.clone()), None, None, None, None, false, None, None,
+    )?;
     let creds = temp_client.create_or_derive_api_key().await?;
-    
+
     // Create the main client with credentials
     let client = ClobClient::new(
-        host,
-        chain_id,
-        Some(wallet),
-        Some(creds),
+        host, gamma_host, Chain::Polygon,
+        Some(wallet), Some(creds),
         Some(1), // Signature type: 0 = EOA, 1 = Poly Proxy, 2 = EIP-1271
-        None,    // Optional funder address
-        None,    // Optional geo-block token
-        false,   // Use server time
-        None,    // Optional builder config
-    );
+        None, None, false, None, None,
+    )?;
     
     // Place a limit order
     let order = UserOrder {
@@ -88,22 +76,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Market Data Access
 
 ```rust
-use rs_clob_client::ClobClient;
+use rs_clob_client::{ClobClient, Chain};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Public endpoints don't require authentication
     let client = ClobClient::new(
         "https://clob.polymarket.com".to_string(),
-        rs_clob_client::Chain::Polygon,
-        None,
-        None,
-        None,
-        None,
-        None,
-        false,
-        None,
-    );
+        "https://gamma-api.polymarket.com".to_string(),
+        Chain::Polygon,
+        None, None, None, None, None, false, None, None,
+    )?;
     
     // Get orderbook for a token
     let token_id = "your_token_id";
@@ -183,15 +166,11 @@ let builder_config = BuilderConfig::new(
 // Create client with builder support
 let client = ClobClient::new(
     "https://clob.polymarket.com".to_string(),
+    "https://gamma-api.polymarket.com".to_string(),
     Chain::Polygon,
-    Some(wallet),
-    Some(creds),
-    Some(0),
-    None,
-    None,
-    false,
-    Some(builder_config),
-);
+    Some(wallet), Some(creds), Some(0), None, None, false,
+    Some(builder_config), None,
+)?;
 
 // Now you can use builder-specific endpoints
 let builder_trades = client.get_builder_trades(None, None).await?;
@@ -207,6 +186,20 @@ let builder_trades = client.get_builder_trades(None, None).await?;
 - ⚠️ **Rate Limiting**: Respect API rate limits to avoid being blocked
 
 ## Configuration
+
+### Proxy Support (v0.1.4+)
+
+The client supports HTTP/HTTPS/SOCKS5 proxy for all API requests. Pass the proxy URL as the last parameter:
+
+```rust
+let client = ClobClient::new(
+    host, gamma_host, chain_id,
+    Some(wallet), Some(creds), Some(1), None, None, false, None,
+    Some("http://127.0.0.1:7890".to_string()), // proxy_url
+)?;
+```
+
+Supported formats: `http://host:port`, `https://host:port`, `socks5://host:port` (with optional `user:pass@`)
 
 ### Chain IDs
 - **Polygon Mainnet**: `Chain::Polygon` (137)
