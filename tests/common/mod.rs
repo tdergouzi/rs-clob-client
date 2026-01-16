@@ -28,7 +28,9 @@ pub fn create_test_client() -> ClobClient {
         None,  // No geo block token
         false, // Don't use server time
         None,  // No builder config
+        None,  // No proxy URL
     )
+    .expect("Failed to create ClobClient")
 }
 
 pub fn create_test_client_with_wallet() -> ClobClient {
@@ -66,7 +68,9 @@ pub fn create_test_client_with_wallet() -> ClobClient {
         None,
         true,
         None,
+        None, // No proxy URL
     )
+    .expect("Failed to create ClobClient")
 }
 
 pub fn create_test_client_with_api_key(signature_type: u8) -> ClobClient {
@@ -118,7 +122,9 @@ pub fn create_test_client_with_api_key(signature_type: u8) -> ClobClient {
         None,
         true,
         None,
+        None,
     )
+    .expect("Failed to create ClobClient")
 }
 
 pub fn create_test_client_with_builder_api_key(signature_type: u8) -> ClobClient {
@@ -182,5 +188,7 @@ pub fn create_test_client_with_builder_api_key(signature_type: u8) -> ClobClient
         None,
         true,
         Some(builder_config),
+        None,
     )
+    .expect("Failed to create ClobClient")
 }
