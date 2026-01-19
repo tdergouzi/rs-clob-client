@@ -1,26 +1,23 @@
 use crate::types::{OrderBookSummary, TickSize};
 use sha1::{Digest, Sha1};
 
+/// Round to nearest value with specified decimal places.
+/// Always applies rounding to avoid floating point precision issues.
 pub fn round_normal(num: f64, decimals: u32) -> f64 {
-    if decimal_places(num) <= decimals {
-        return num;
-    }
     let multiplier = 10_f64.powi(decimals as i32);
     (num * multiplier).round() / multiplier
 }
 
+/// Round down (floor) to specified decimal places.
+/// Always applies rounding to avoid floating point precision issues.
 pub fn round_down(num: f64, decimals: u32) -> f64 {
-    if decimal_places(num) <= decimals {
-        return num;
-    }
     let multiplier = 10_f64.powi(decimals as i32);
     (num * multiplier).floor() / multiplier
 }
 
+/// Round up (ceil) to specified decimal places.
+/// Always applies rounding to avoid floating point precision issues.
 pub fn round_up(num: f64, decimals: u32) -> f64 {
-    if decimal_places(num) <= decimals {
-        return num;
-    }
     let multiplier = 10_f64.powi(decimals as i32);
     (num * multiplier).ceil() / multiplier
 }

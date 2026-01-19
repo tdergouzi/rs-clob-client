@@ -87,6 +87,12 @@ pub fn get_order_raw_amounts(
     }
 }
 
+/// Polymarket API precision limits for market orders:
+/// - maker_amount: max 2 decimal places
+/// - taker_amount: max 5 decimal places
+const MARKET_ORDER_MAKER_DECIMALS: u32 = 2;
+const MARKET_ORDER_TAKER_DECIMALS: u32 = 5;
+
 pub fn get_market_order_raw_amounts(
     side: Side,
     amount: f64,
@@ -97,15 +103,11 @@ pub fn get_market_order_raw_amounts(
 
     match side {
         Side::Buy => {
-            let raw_maker_amt = round_down(amount, round_config.size);
-            let mut raw_taker_amt = raw_maker_amt / raw_price;
-
-            if decimal_places(raw_taker_amt) > round_config.amount {
-                raw_taker_amt = round_up(raw_taker_amt, round_config.amount + 4);
-                if decimal_places(raw_taker_amt) > round_config.amount {
-                    raw_taker_amt = round_down(raw_taker_amt, round_config.amount);
-                }
-            }
+            // For buy orders: maker_amt is USDC paid, taker_amt is shares received
+            // Always enforce maker precision to 2 decimals (API requirement)
+            let raw_maker_amt = round_down(amount, MARKET_ORDER_MAKER_DECIMALS);
+            // Calculate taker amount and enforce 5 decimal precision (API requirement)
+            let raw_taker_amt = round_down(raw_maker_amt / raw_price, MARKET_ORDER_TAKER_DECIMALS);
 
             RawAmounts {
                 side: Side::Buy,
@@ -114,15 +116,11 @@ pub fn get_market_order_raw_amounts(
             }
         }
         Side::Sell => {
-            let raw_maker_amt = round_down(amount, round_config.size);
-            let mut raw_taker_amt = raw_maker_amt * raw_price;
-
-            if decimal_places(raw_taker_amt) > round_config.amount {
-                raw_taker_amt = round_up(raw_taker_amt, round_config.amount + 4);
-                if decimal_places(raw_taker_amt) > round_config.amount {
-                    raw_taker_amt = round_down(raw_taker_amt, round_config.amount);
-                }
-            }
+            // For sell orders: maker_amt is shares sold, taker_amt is USDC received
+            // Enforce maker precision to 2 decimals
+            let raw_maker_amt = round_down(amount, MARKET_ORDER_MAKER_DECIMALS);
+            // Calculate taker amount and enforce 5 decimal precision
+            let raw_taker_amt = round_down(raw_maker_amt * raw_price, MARKET_ORDER_TAKER_DECIMALS);
 
             RawAmounts {
                 side: Side::Sell,
@@ -230,8 +228,30 @@ pub async fn build_order(
 
 fn parse_units(value: f64, decimals: u8) -> U256 {
     let multiplier = 10_f64.powi(decimals as i32);
-    let raw_value = (value * multiplier) as u128;
+    let raw_value = (value * multiplier).round() as u128;
     U256::from(raw_value)
+}
+
+/// Parse units for market order maker amount (max 2 decimals precision)
+/// Result must be a multiple of 10000 (since USDC has 6 decimals, 2 decimal precision = 10^(6-2) = 10000)
+fn parse_market_maker_units(value: f64, decimals: u8) -> U256 {
+    let multiplier = 10_f64.powi(decimals as i32);
+    let raw_value = (value * multiplier).round() as u128;
+    // Align to 10000 (for 2 decimal precision with 6 decimal token)
+    let alignment = 10_u128.pow((decimals - 2) as u32); // 10^4 = 10000
+    let aligned_value = (raw_value / alignment) * alignment;
+    U256::from(aligned_value)
+}
+
+/// Parse units for market order taker amount (max 5 decimals precision)
+/// Result must be a multiple of 10 (since USDC has 6 decimals, 5 decimal precision = 10^(6-5) = 10)
+fn parse_market_taker_units(value: f64, decimals: u8) -> U256 {
+    let multiplier = 10_f64.powi(decimals as i32);
+    let raw_value = (value * multiplier).round() as u128;
+    // Align to 10 (for 5 decimal precision with 6 decimal token)
+    let alignment = 10_u128.pow((decimals - 5) as u32); // 10^1 = 10
+    let aligned_value = (raw_value / alignment) * alignment;
+    U256::from(aligned_value)
 }
 
 pub fn build_limit_order_creation_args(
@@ -328,8 +348,9 @@ pub fn build_market_order_creation_args(
         round_config,
     );
 
-    let maker_amount = parse_units(raw_amounts.raw_maker_amt, COLLATERAL_TOKEN_DECIMALS);
-    let taker_amount = parse_units(raw_amounts.raw_taker_amt, COLLATERAL_TOKEN_DECIMALS);
+    // Use market-specific parsing functions that enforce API precision requirements
+    let maker_amount = parse_market_maker_units(raw_amounts.raw_maker_amt, COLLATERAL_TOKEN_DECIMALS);
+    let taker_amount = parse_market_taker_units(raw_amounts.raw_taker_amt, COLLATERAL_TOKEN_DECIMALS);
 
     let taker = user_market_order.taker.unwrap_or(Address::ZERO);
 
